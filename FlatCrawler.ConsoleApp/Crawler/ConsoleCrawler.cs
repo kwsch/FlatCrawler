@@ -165,6 +165,8 @@ namespace FlatCrawler.ConsoleApp
                     case "clear":
                         Console.Clear();
                         return CrawlResult.Silent;
+                    case "quit":
+                        return CrawlResult.Quit;
                     case "p" or "info":
                         node.Print();
                         return CrawlResult.Silent;
