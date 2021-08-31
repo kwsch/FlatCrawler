@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlatCrawler.ConsoleApp", "F
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlatCrawler.Lib", "FlatCrawler.Lib\FlatCrawler.Lib.csproj", "{71B14661-822B-4871-97A2-BCCCB797EEC3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlatCrawler.Sandbox", "FlatCrawler.Sandbox\FlatCrawler.Sandbox.csproj", "{1B5C7384-A5E0-4646-8C9D-4280D0685BBB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlatCrawler.Tests", "FlatCrawler.Tests\FlatCrawler.Tests.csproj", "{5B72C1A2-BCD3-44FF-A62D-AF645337E14C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{71B14661-822B-4871-97A2-BCCCB797EEC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{71B14661-822B-4871-97A2-BCCCB797EEC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{71B14661-822B-4871-97A2-BCCCB797EEC3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1B5C7384-A5E0-4646-8C9D-4280D0685BBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1B5C7384-A5E0-4646-8C9D-4280D0685BBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1B5C7384-A5E0-4646-8C9D-4280D0685BBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1B5C7384-A5E0-4646-8C9D-4280D0685BBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B72C1A2-BCD3-44FF-A62D-AF645337E14C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B72C1A2-BCD3-44FF-A62D-AF645337E14C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B72C1A2-BCD3-44FF-A62D-AF645337E14C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B72C1A2-BCD3-44FF-A62D-AF645337E14C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

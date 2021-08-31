@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using FlatCrawler.Lib;
+using FlatCrawler.Tests.Properties;
+using Xunit;
 
 namespace FlatCrawler.Sandbox
 {
     public static class DumpPokeMemory
     {
-        public static void Crawl(string path)
+        [Fact]
+        public static void Crawl()
         {
-            var data = File.ReadAllBytes(path);
+            var data = Resources.poke_memory;
 
             FlatBufferRoot root = FlatBufferRoot.Read(0, data);
             var f0 = root.ReadArrayObject(0, data);
