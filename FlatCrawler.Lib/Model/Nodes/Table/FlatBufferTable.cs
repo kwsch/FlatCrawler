@@ -7,7 +7,7 @@ namespace FlatCrawler.Lib
     {
         public int Length { get; }
         public int DataTableOffset { get; }
-        protected T[] Entries { get; }
+        public T[] Entries { get; }
 
         IReadOnlyList<FlatBufferNode> IArrayNode.Entries => Entries;
 

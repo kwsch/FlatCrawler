@@ -31,6 +31,6 @@ namespace FlatCrawler.Lib
             return node;
         }
 
-        public static FlatBufferTableString Read(FlatBufferNodeField parent, int fieldOffset, byte[] data) => Read(parent.GetReferenceOffset(fieldOffset, data), parent, data);
+        public static FlatBufferTableString Read(FlatBufferNodeField parent, int fieldIndex, byte[] data) => Read(parent.GetReferenceOffset(fieldIndex, data), parent, data);
     }
 }
