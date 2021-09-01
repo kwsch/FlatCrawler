@@ -13,6 +13,7 @@ namespace FlatCrawler.Lib
         public IReadOnlyList<FlatBufferNode?> AllFields => Fields;
 
         public bool HasField(int fieldIndex) => VTable.FieldOffsets[fieldIndex].Offset != 0;
+        public int FieldCount => Fields.Length;
 
         protected FlatBufferNodeField(int offset, VTable vTable, int dataTableOffset, int vTableOffset, FlatBufferNode? parent = null) : base(offset, parent)
         {

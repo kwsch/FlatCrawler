@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using FlatCrawler.Lib;
 
 namespace FlatCrawler.ConsoleApp
@@ -167,12 +168,15 @@ namespace FlatCrawler.ConsoleApp
                         return CrawlResult.Silent;
                     case "quit":
                         return CrawlResult.Quit;
-                    case "p" or "info":
+                    case "p" or "info" or "print":
                         node.Print();
                         return CrawlResult.Silent;
                     case "hex" or "h":
                         DumpHex(data, node.Offset);
                         return CrawlResult.Silent;
+                    case "au" or "analyze" or "union" when node is IArrayNode a:
+                        AnalyzeUnion(data, a);
+                        return CrawlResult.Navigate;
 
                     case "up":
                         if (node.Parent is not { } up)
@@ -197,6 +201,31 @@ namespace FlatCrawler.ConsoleApp
                 return CrawlResult.Error;
             }
         }
+
+        private static void AnalyzeUnion(byte[] data, IArrayNode array)
+        {
+            var result = new Dictionary<byte, Union>();
+            var entries = array.Entries;
+            for (var index = 0; index < entries.Count; index++)
+            {
+                var flatBufferNode = entries[index];
+                var node = (FlatBufferObject)flatBufferNode;
+                var type = node.GetFieldValue(0, data, TypeCode.Byte);
+                var obj = FlatBufferObject.Read(node, 1, data);
+                var bval = ((FlatBufferFieldValue<byte>)type).Value;
+                var chk = new Union(bval, index, obj.FieldCount);
+                node.ForceNameHint(chk.ToString());
+
+                if (!result.TryGetValue(bval, out var c) || c!.FieldCount < chk.FieldCount)
+                    result[bval] = chk;
+            }
+
+            var unique = result.OrderBy(z => z.Key).ToArray();
+            Console.WriteLine($"Unique Types: {string.Join(" ", unique.Select(z => $"{z.Key}"))}");
+            Console.WriteLine($"Example Type Indexes:{Environment.NewLine}{string.Join(Environment.NewLine, unique.Select(z => $"{z.Value}"))}");
+        }
+
+        private sealed record Union(byte Type, int Index, int FieldCount);
 
         private static FlatBufferNode ReadNode(FlatBufferNode node, int fieldIndex, string type, byte[] data) => node switch
         {

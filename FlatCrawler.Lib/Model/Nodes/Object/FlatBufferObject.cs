@@ -2,7 +2,9 @@
 {
     public sealed record FlatBufferObject : FlatBufferNodeField
     {
-        public override string Name => "Object";
+        private string _name = "Object";
+        public override string Name => _name;
+        public void ForceNameHint(string name) => _name = name;
 
         private FlatBufferObject(int offset, VTable vTable, int dataTableOffset, int vTableOffset, FlatBufferNode parent) : base(offset, vTable, dataTableOffset, vTableOffset, parent)
         {
