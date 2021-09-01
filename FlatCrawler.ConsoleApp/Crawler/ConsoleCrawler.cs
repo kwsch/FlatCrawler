@@ -187,8 +187,12 @@ namespace FlatCrawler.ConsoleApp
                         node = up;
                         return CrawlResult.Navigate;
                     case "root":
-                        if (node.Parent is { } parent)
-                            node = parent;
+                        if (node.Parent is null)
+                        {
+                            Console.WriteLine("Node is already root. Unable to go up.");
+                            return CrawlResult.Silent;
+                        }
+                        do { node = node.Parent; } while (node.Parent is { });
                         Console.WriteLine($"Success! Reset to root @ offset 0x{node.Offset}");
                         return CrawlResult.Navigate;
                     default:
