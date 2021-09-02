@@ -64,26 +64,29 @@ namespace FlatCrawler.ConsoleApp
             var args = cmd[(sp + 1)..];
             try
             {
+                static int GetFieldIndex(string txt) => txt.Contains("0x")
+                    ? int.Parse(txt.Replace("0x", ""), NumberStyles.HexNumber)
+                    : int.Parse(txt);
                 switch (c)
                 {
                     case "ro" when node is IFieldNode p:
                     {
-                        var fieldIndex = int.Parse(args.Replace("0x", ""), NumberStyles.HexNumber);
+                        var fieldIndex = GetFieldIndex(args);
                         var ofs = p.GetReferenceOffset(fieldIndex, data);
                         Console.WriteLine($"Offset: 0x{ofs:X}");
                         return CrawlResult.Silent;
                     }
                     case "fo" when node is IFieldNode p:
                     {
-                        var fieldIndex = int.Parse(args.Replace("0x", ""), NumberStyles.HexNumber);
+                        var fieldIndex = GetFieldIndex(args);
                         var ofs = p.GetFieldOffset(fieldIndex);
                         Console.WriteLine($"Offset: 0x{ofs:X}");
                         return CrawlResult.Silent;
                     }
                     case "eo" when node is IArrayNode p:
                     {
-                        var fieldIndex = int.Parse(args.Replace("0x", ""), NumberStyles.HexNumber);
-                        var ofs = p.GetEntry(fieldIndex).Offset;
+                        var fieldIndex = GetFieldIndex(args);
+                            var ofs = p.GetEntry(fieldIndex).Offset;
                         Console.WriteLine($"Offset: 0x{ofs:X}");
                         return CrawlResult.Silent;
                     }
@@ -91,12 +94,15 @@ namespace FlatCrawler.ConsoleApp
                     {
                         if (!args.Contains(' '))
                         {
-                            node = p.GetField(int.Parse(args)) ?? throw new ArgumentNullException(nameof(FlatBufferNode), "node not explored yet.");
+                            var index = GetFieldIndex(args);
+                            node = p.GetField(index) ?? throw new ArgumentNullException(nameof(FlatBufferNode), "node not explored yet.");
                             return CrawlResult.Silent;
                         }
 
                         var (fieldIndex, fieldType) = CommandUtil.GetDualArgs(args);
-                        node = ReadNode(node, fieldIndex, fieldType.ToLowerInvariant(), data);
+                        var result = ReadNode(node, fieldIndex, fieldType.ToLowerInvariant(), data);
+                        if (result is not IStructNode)
+                            node = result;
                         return CrawlResult.Navigate;
                     }
                     case "rf" when node is IArrayNode p:
@@ -108,7 +114,9 @@ namespace FlatCrawler.ConsoleApp
                         }
 
                         var (fieldIndex, fieldType) = CommandUtil.GetDualArgs(args);
-                        node = ReadNode(node, fieldIndex, fieldType.ToLowerInvariant(), data);
+                        var result = ReadNode(node, fieldIndex, fieldType.ToLowerInvariant(), data);
+                        if (result is not IStructNode)
+                            node = result;
                         return CrawlResult.Navigate;
                     }
                     case "rf":

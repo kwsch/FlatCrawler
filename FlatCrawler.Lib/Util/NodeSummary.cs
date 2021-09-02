@@ -48,8 +48,8 @@ namespace FlatCrawler.Lib
                 case FlatBufferFieldValue<ushort> b: result.Add($"Value: 0x{b.Value:X} [{b.Value}]"); break;
                 case FlatBufferFieldValue<uint  > b: result.Add($"Value: 0x{b.Value:X} [{b.Value}]"); break;
                 case FlatBufferFieldValue<ulong > b: result.Add($"Value: 0x{b.Value:X} [{b.Value}]"); break;
-                case FlatBufferFieldValue<float > b: result.Add($"Value: 0x{b.Value:X} [{b.Value}]"); break;
-                case FlatBufferFieldValue<double> b: result.Add($"Value: 0x{b.Value:X} [{b.Value}]"); break;
+                case FlatBufferFieldValue<float > b: result.Add($"Value: 0x{b.Value} [{b.Value}]"); break;
+                case FlatBufferFieldValue<double> b: result.Add($"Value: 0x{b.Value} [{b.Value}]"); break;
 
                 default:
                     result.Add($"Not implemented: {node}");

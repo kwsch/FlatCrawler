@@ -10,6 +10,7 @@ namespace FlatCrawler.Lib
         public int MaxPrefixTable { get; init; } = 7;
         public int MaxSuffixTable { get; init; } = 3;
         public string Unexplored { get; init; } = "???";
+        public string Default { get; init; } = "Default";
         public string LinkedNode { get; init; } = "<---";
         public string RootName { get; init; } = "Root";
 
@@ -72,10 +73,10 @@ namespace FlatCrawler.Lib
             var iter = Math.Min(MaxPrefixTable, iterMid);
 
             for (int i = 0; i <= iter; i++)
-                result.Add(GetDepthPadded($"[{i}] {GetNodeDescription(x, i, cn)}", depth));
+                result.Add(GetDepthPadded($"[{i}] {GetNodeDescription(node, x, i, cn)}", depth));
 
             if (iterMid != iter && cn is not null)
-                result.Add(GetDepthPadded($"[{iterMid}] {GetNodeDescription(x, iterMid, cn)}", depth));
+                result.Add(GetDepthPadded($"[{iterMid}] {GetNodeDescription(node, x, iterMid, cn)}", depth));
 
             if (cn is null)
                 return;
@@ -84,7 +85,7 @@ namespace FlatCrawler.Lib
 
             var resume = Math.Max(a.Entries.Count - MaxSuffixTable - 1, iterMid + 1);
             for (int i = resume; i < a.Entries.Count; i++)
-                result.Add(GetDepthPadded($"[{i}] {GetNodeDescription(x, i, cn)}", depth));
+                result.Add(GetDepthPadded($"[{i}] {GetNodeDescription(node, x, i, cn)}", depth));
         }
 
         private void AppendFieldNodes(List<string> result, int depth, FlatBufferNodeField node, LinkedListNode<FlatBufferNode>? child)
@@ -96,7 +97,7 @@ namespace FlatCrawler.Lib
                 iterMid = x.Count - 1;
 
             for (int i = 0; i <= iterMid; i++)
-                result.Add(GetDepthPadded($"[{i}] {GetNodeDescription(x, i, cn)}", depth));
+                result.Add(GetDepthPadded($"[{i}] {GetNodeDescription(node, x, i, cn)}", depth));
 
             if (cn is null)
                 return;
@@ -104,12 +105,14 @@ namespace FlatCrawler.Lib
             AppendNodeData(child!, result, depth + 1);
 
             for (int i = iterMid + 1; i < x.Count; i++)
-                result.Add(GetDepthPadded($"[{i}] {GetNodeDescription(x, i, cn)}", depth));
+                result.Add(GetDepthPadded($"[{i}] {GetNodeDescription(node, x, i, cn)}", depth));
         }
 
-        private string GetNodeDescription(IReadOnlyList<FlatBufferNode?> x, int i, FlatBufferNode? cmp)
+        private string GetNodeDescription(FlatBufferNode parent, IReadOnlyList<FlatBufferNode?> x, int index, FlatBufferNode? cmp)
         {
-            var entry = x[i];
+            if (parent is FlatBufferNodeField f && !f.HasField(index))
+                return Default;
+            var entry = x[index];
             if (cmp is not null && ReferenceEquals(cmp, entry))
                 return $"{cmp.Name} {LinkedNode}";
             return entry?.Name ?? Unexplored;
