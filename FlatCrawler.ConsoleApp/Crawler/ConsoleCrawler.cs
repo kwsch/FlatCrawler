@@ -152,6 +152,13 @@ namespace FlatCrawler.ConsoleApp
                             : "No entry has a value for that field.");
                         return CrawlResult.Silent;
                     }
+                    case "of" when node is FlatBufferNodeField f:
+                    {
+                        var offset = int.Parse(args.Replace("0x", ""), NumberStyles.HexNumber);
+                        var index = f.VTable.GetFieldIndex(offset - f.DataTableOffset);
+                        Console.WriteLine($"Offset {offset:X} is Field {index}");
+                        return CrawlResult.Silent;
+                    }
 
                     case "hex" or "h":
                     {
@@ -217,6 +224,11 @@ namespace FlatCrawler.ConsoleApp
                     case "oof" when node is FlatBufferNodeField fn:
                     {
                         Console.WriteLine(fn.VTable.GetFieldOrder());
+                        return CrawlResult.Silent;
+                    }
+                    case "oofd" when node is FlatBufferNodeField fn:
+                    {
+                        Console.WriteLine(fn.VTable.GetFieldOrder(fn.DataTableOffset));
                         return CrawlResult.Silent;
                     }
                     case "mfc" when node is IArrayNode an:

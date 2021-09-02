@@ -34,10 +34,22 @@ namespace FlatCrawler.Lib
             return result;
         }
 
-        public string GetFieldOrder()
+        public int GetFieldIndex(int offset)
+        {
+            if (offset == 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Value of 0 for offset is not valid (Default Value)");
+
+            var index = Array.FindIndex(FieldOffsets, z => z.Offset == offset);
+            if (index == -1)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Unable to find the field index with that offset.");
+
+            return index;
+        }
+
+        public string GetFieldOrder(int bias = 0)
         {
             var tuples = FieldOffsets.Where(z => z.Offset != 0).OrderBy(z => z.Offset);
-            return string.Join(" ", GetFieldPrint(tuples));
+            return string.Join(" ", GetFieldPrint(tuples, bias));
         }
 
         public override string ToString() => $@"VTable @ 0x{Location:X}
@@ -47,9 +59,9 @@ Fields: {FieldOffsets.Length}: {string.Join(" ", GetFieldPrint(FieldOffsets))}";
 
         private const int fieldsPerLine = 8;
 
-        private static IEnumerable<string?> GetFieldPrint(IEnumerable<VTableFieldInfo> fields)
+        private static IEnumerable<string?> GetFieldPrint(IEnumerable<VTableFieldInfo> fields, int bias = 0)
         {
-            static string PrintField(VTableFieldInfo z, int printedIndex) => $"{(printedIndex % fieldsPerLine == 0 ? Environment.NewLine : "")}{z.Index:00}: {z.Offset:X4}  ";
+            string PrintField(VTableFieldInfo z, int printedIndex) => $"{(printedIndex % fieldsPerLine == 0 ? Environment.NewLine : "")}{z.Index:00}: {z.Offset + bias:X4}  ";
             return fields.Select(PrintField);
         }
     }
