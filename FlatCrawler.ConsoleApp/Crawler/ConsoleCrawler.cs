@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using FlatCrawler.Lib;
 
 namespace FlatCrawler.ConsoleApp
@@ -30,6 +31,7 @@ namespace FlatCrawler.ConsoleApp
             FlatBufferNode node = FlatBufferRoot.Read(0, Data);
             node.PrintTree();
 
+            Console.OutputEncoding = Encoding.UTF8; // japanese strings will show up as boxes rather than ????
             while (true)
             {
                 Console.Write(">>> ");
@@ -99,7 +101,7 @@ namespace FlatCrawler.ConsoleApp
 
                         var (fieldIndex, fieldType) = CommandUtil.GetDualArgs(args);
                         var result = node.ReadNode(fieldIndex, fieldType.ToLowerInvariant(), data);
-                        if (result is not IStructNode)
+                        if (result is not (IStructNode or FlatBufferStringValue))
                             node = result;
                         return CrawlResult.Navigate;
                     }
@@ -113,12 +115,29 @@ namespace FlatCrawler.ConsoleApp
 
                         var (fieldIndex, fieldType) = CommandUtil.GetDualArgs(args);
                         var result = node.ReadNode(fieldIndex, fieldType.ToLowerInvariant(), data);
-                        if (result is not IStructNode)
+                        if (result is not (IStructNode or FlatBufferStringValue))
                             node = result;
                         return CrawlResult.Navigate;
                     }
                     case "rf":
                     {
+                        Console.WriteLine("Node has no fields. Unable to read the requested field node.");
+                        return CrawlResult.Silent;
+                    }
+                    case "fowf" when node is IArrayNode p:
+                    {
+                        var (objectIndex, other) = CommandUtil.GetDualArgs(args);
+                        var fieldIndex = int.Parse(other);
+                        for (int i = 0; i < p.Entries.Count; i++)
+                        {
+                            var x = p.GetEntry(i);
+                            var y = x.ReadNode(objectIndex, "object", data);
+                            var fc = ((FlatBufferNodeField)y).HasField(fieldIndex);
+                            if (!fc)
+                                continue;
+                            Console.WriteLine($"Entry {i} has an object at field {objectIndex} with a value for its Field {fieldIndex}");
+                            return CrawlResult.Silent;
+                        }
                         Console.WriteLine("Node has no fields. Unable to read the requested field node.");
                         return CrawlResult.Silent;
                     }
