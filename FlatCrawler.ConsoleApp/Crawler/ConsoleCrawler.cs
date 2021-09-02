@@ -23,7 +23,8 @@ namespace FlatCrawler.ConsoleApp
 
         public void CrawlLoop()
         {
-            Console.WriteLine($"Crawling {Path.GetFileName(FilePath)}...");
+            var fn = Path.GetFileName(FilePath);
+            Console.WriteLine($"Crawling {Console.Title = fn}...");
             Console.WriteLine();
 
             FlatBufferNode node = FlatBufferRoot.Read(0, Data);
@@ -182,6 +183,9 @@ namespace FlatCrawler.ConsoleApp
                         return CrawlResult.Silent;
                     case "clear":
                         Console.Clear();
+                        return CrawlResult.Silent;
+                    case "path":
+                        Console.WriteLine(FilePath);
                         return CrawlResult.Silent;
                     case "quit":
                         return CrawlResult.Quit;
