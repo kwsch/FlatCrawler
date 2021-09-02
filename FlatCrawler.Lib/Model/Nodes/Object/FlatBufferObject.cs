@@ -1,4 +1,6 @@
-﻿namespace FlatCrawler.Lib
+﻿using System;
+
+namespace FlatCrawler.Lib
 {
     public sealed record FlatBufferObject : FlatBufferNodeField
     {
@@ -21,6 +23,10 @@
             // Read VTable
             var vTableOffset = GetVtableOffset(tableOffset, data, true);
             var vTable = ReadVTable(vTableOffset, data);
+
+            // Ensure VTable is correct
+            if (vTableOffset < tableOffset && (vTableOffset + vTable.VTableLength) > tableOffset)
+                throw new IndexOutOfRangeException("VTable overflows into Data Table. Not a valid VTable.");
             return new FlatBufferObject(offset, vTable, tableOffset, vTableOffset, parent);
         }
 
