@@ -127,26 +127,16 @@ namespace FlatCrawler.ConsoleApp
                     case "fewf" when node is IArrayNode p:
                     {
                         var fIndex = int.Parse(args);
-                        for (int i = 0; i < p.Entries.Count; i++)
-                        {
-                            if (p.Entries[i] is not FlatBufferNodeField f || !f.HasField(fIndex))
-                                continue;
-                            Console.WriteLine($"Entry {i} has a value for Field {fIndex}");
-                            return CrawlResult.Silent;
-                        }
-                        Console.WriteLine("No entry has a value for that field.");
+                        var result = p.GetEntryIndexWithField(fIndex);
+                        Console.WriteLine(result != -1
+                            ? $"Entry {result} has a value for Field {fIndex}"
+                            : "No entry has a value for that field.");
                         return CrawlResult.Silent;
                     }
                     case "fewfs" when node is IArrayNode p:
                     {
                         var fIndex = int.Parse(args);
-                        var result = new List<int>();
-                        for (int i = 0; i < p.Entries.Count; i++)
-                        {
-                            if (p.Entries[i] is not FlatBufferNodeField f || !f.HasField(fIndex))
-                                continue;
-                            result.Add(i);
-                        }
+                        var result = p.GetEntryIndexesWithField(fIndex);
                         Console.WriteLine(result.Count != 0
                             ? $"Entries having a value for field {fIndex}: {string.Join(" ", result)}"
                             : "No entry has a value for that field.");
@@ -233,15 +223,7 @@ namespace FlatCrawler.ConsoleApp
                     }
                     case "mfc" when node is IArrayNode an:
                     {
-                        int index = 0;
-                        int max = 0;
-                        for (int i = 0; i < an.Entries.Count; i++)
-                        {
-                            if (an.Entries[i] is not FlatBufferNodeField f || f.FieldCount <= max)
-                                continue;
-                            index = i;
-                            max = f.FieldCount;
-                        }
+                        var (index, max) = an.GetMaxFieldCountIndex();
                         Console.WriteLine(max != 0
                             ? $"Max field count is {max} @ index {index}"
                             : "No nodes have a detectable field count.");
@@ -277,29 +259,11 @@ namespace FlatCrawler.ConsoleApp
 
         private static void AnalyzeUnion(byte[] data, IArrayNode array)
         {
-            var result = new Dictionary<byte, Union>();
-            var entries = array.Entries;
-            for (var index = 0; index < entries.Count; index++)
-            {
-                var flatBufferNode = entries[index];
-                var node = (FlatBufferObject)flatBufferNode;
-                var type = node.GetFieldValue(0, data, TypeCode.Byte);
-                var obj = node.ReadObject(1, data);
-                var bval = ((FlatBufferFieldValue<byte>)type).Value;
-                var chk = new Union(bval, index, obj.FieldCount);
-                node.ForceNameHint(chk.ToString());
-
-                // add or update key if our FieldCount is new or bigger than previously noted for this union type
-                if (!result.TryGetValue(bval, out var c) || c.FieldCount < chk.FieldCount)
-                    result[bval] = chk;
-            }
-
+            var result = array.GetUnionAnalysis(data);
             var unique = result.OrderBy(z => z.Key).ToArray();
             Console.WriteLine($"Unique Types: {string.Join(" ", unique.Select(z => $"{z.Key}"))}");
             Console.WriteLine($"Example Type Indexes:{Environment.NewLine}{string.Join(Environment.NewLine, unique.Select(z => $"{z.Value}"))}");
         }
-
-        private sealed record Union(byte Type, int Index, int FieldCount);
 
         private static FlatBufferNode ReadNode(FlatBufferNode node, int fieldIndex, string type, byte[] data) => node switch
         {
