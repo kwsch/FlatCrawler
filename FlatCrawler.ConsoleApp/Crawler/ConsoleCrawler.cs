@@ -64,29 +64,26 @@ namespace FlatCrawler.ConsoleApp
             var args = cmd[(sp + 1)..];
             try
             {
-                static int GetFieldIndex(string txt) => txt.Contains("0x")
-                    ? int.Parse(txt.Replace("0x", ""), NumberStyles.HexNumber)
-                    : int.Parse(txt);
                 switch (c)
                 {
                     case "ro" when node is IFieldNode p:
                     {
-                        var fieldIndex = GetFieldIndex(args);
+                        var fieldIndex = CommandUtil.GetIntPossibleHex(args);
                         var ofs = p.GetReferenceOffset(fieldIndex, data);
                         Console.WriteLine($"Offset: 0x{ofs:X}");
                         return CrawlResult.Silent;
                     }
                     case "fo" when node is IFieldNode p:
                     {
-                        var fieldIndex = GetFieldIndex(args);
+                        var fieldIndex = CommandUtil.GetIntPossibleHex(args);
                         var ofs = p.GetFieldOffset(fieldIndex);
                         Console.WriteLine($"Offset: 0x{ofs:X}");
                         return CrawlResult.Silent;
                     }
                     case "eo" when node is IArrayNode p:
                     {
-                        var fieldIndex = GetFieldIndex(args);
-                            var ofs = p.GetEntry(fieldIndex).Offset;
+                        var fieldIndex = CommandUtil.GetIntPossibleHex(args);
+                        var ofs = p.GetEntry(fieldIndex).Offset;
                         Console.WriteLine($"Offset: 0x{ofs:X}");
                         return CrawlResult.Silent;
                     }
@@ -94,13 +91,13 @@ namespace FlatCrawler.ConsoleApp
                     {
                         if (!args.Contains(' '))
                         {
-                            var index = GetFieldIndex(args);
+                            var index = CommandUtil.GetIntPossibleHex(args);
                             node = p.GetField(index) ?? throw new ArgumentNullException(nameof(FlatBufferNode), "node not explored yet.");
                             return CrawlResult.Silent;
                         }
 
                         var (fieldIndex, fieldType) = CommandUtil.GetDualArgs(args);
-                        var result = ReadNode(node, fieldIndex, fieldType.ToLowerInvariant(), data);
+                        var result = node.ReadNode(fieldIndex, fieldType.ToLowerInvariant(), data);
                         if (result is not IStructNode)
                             node = result;
                         return CrawlResult.Navigate;
@@ -114,7 +111,7 @@ namespace FlatCrawler.ConsoleApp
                         }
 
                         var (fieldIndex, fieldType) = CommandUtil.GetDualArgs(args);
-                        var result = ReadNode(node, fieldIndex, fieldType.ToLowerInvariant(), data);
+                        var result = node.ReadNode(fieldIndex, fieldType.ToLowerInvariant(), data);
                         if (result is not IStructNode)
                             node = result;
                         return CrawlResult.Navigate;
@@ -144,7 +141,7 @@ namespace FlatCrawler.ConsoleApp
                     }
                     case "of" when node is FlatBufferNodeField f:
                     {
-                        var offset = int.Parse(args.Replace("0x", ""), NumberStyles.HexNumber);
+                        var offset = int.Parse(args.Replace("0x", ""), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                         var index = f.VTable.GetFieldIndex(offset - f.DataTableOffset);
                         Console.WriteLine($"Offset {offset:X} is Field {index}");
                         return CrawlResult.Silent;
@@ -152,13 +149,8 @@ namespace FlatCrawler.ConsoleApp
 
                     case "hex" or "h":
                     {
-                        if (!int.TryParse(args.Replace("0x", ""), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var hexOffset))
-                        {
-                            Console.WriteLine("Unable to parse hex offset.");
-                            return CrawlResult.Silent;
-                        }
-
-                        DumpHex(data, hexOffset);
+                        var offset = int.Parse(args.Replace("0x", ""), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                        DumpHex(data, offset);
                         return CrawlResult.Silent;
                     }
                     default:
@@ -188,14 +180,6 @@ namespace FlatCrawler.ConsoleApp
                     case "tree":
                         node.PrintTree();
                         return CrawlResult.Silent;
-                    case "load":
-                        foreach (var line in File.ReadLines(SaveStatePath))
-                            ProcessCommand(line, ref node, data);
-                        Console.WriteLine("Reloaded state.");
-                        return CrawlResult.Silent;
-                    case "dump":
-                        File.WriteAllLines(SaveStatePath, ProcessedCommands);
-                        return CrawlResult.Silent;
                     case "clear":
                         Console.Clear();
                         return CrawlResult.Silent;
@@ -207,28 +191,37 @@ namespace FlatCrawler.ConsoleApp
                     case "hex" or "h":
                         DumpHex(data, node.Offset);
                         return CrawlResult.Silent;
+
+                    // reloading state from previous session
+                    case "dump":
+                        File.WriteAllLines(SaveStatePath, ProcessedCommands);
+                        return CrawlResult.Silent;
+                    case "load":
+                        foreach (var line in File.ReadLines(SaveStatePath))
+                            ProcessCommand(line, ref node, data);
+                        Console.WriteLine("Reloaded state.");
+                        return CrawlResult.Silent;
+
+#region Analysis
                     case "au" or "analyze" or "union" when node is IArrayNode a:
                         AnalyzeUnion(data, a);
                         return CrawlResult.Navigate;
 
                     case "oof" when node is FlatBufferNodeField fn:
-                    {
                         Console.WriteLine(fn.VTable.GetFieldOrder());
                         return CrawlResult.Silent;
-                    }
                     case "oofd" when node is FlatBufferNodeField fn:
-                    {
                         Console.WriteLine(fn.VTable.GetFieldOrder(fn.DataTableOffset));
                         return CrawlResult.Silent;
-                    }
+
                     case "mfc" when node is IArrayNode an:
-                    {
                         var (index, max) = an.GetMaxFieldCountIndex();
                         Console.WriteLine(max != 0
-                            ? $"Max field count is {max} @ index {index}"
+                            ? $"Max field count is {max} @ entry index {index}"
                             : "No nodes have a detectable field count.");
                         return CrawlResult.Silent;
-                    }
+#endregion
+
                     case "up":
                         if (node.Parent is not { } up)
                         {
@@ -246,6 +239,7 @@ namespace FlatCrawler.ConsoleApp
                         do { node = node.Parent; } while (node.Parent is { });
                         Console.WriteLine($"Success! Reset to root @ offset 0x{node.Offset}");
                         return CrawlResult.Navigate;
+
                     default:
                         return CrawlResult.Unrecognized;
                 }
@@ -263,38 +257,6 @@ namespace FlatCrawler.ConsoleApp
             var unique = result.OrderBy(z => z.Key).ToArray();
             Console.WriteLine($"Unique Types: {string.Join(" ", unique.Select(z => $"{z.Key}"))}");
             Console.WriteLine($"Example Type Indexes:{Environment.NewLine}{string.Join(Environment.NewLine, unique.Select(z => $"{z.Value}"))}");
-        }
-
-        private static FlatBufferNode ReadNode(FlatBufferNode node, int fieldIndex, string type, byte[] data) => node switch
-        {
-            IArrayNode a => a.GetEntry(fieldIndex),
-            FlatBufferNodeField r => ReadNode(r, fieldIndex, data, type),
-            _ => throw new ArgumentException("Field not present in VTable"),
-        };
-
-        private static FlatBufferNode ReadNode(FlatBufferNodeField node, int fieldIndex, byte[] data, string type)
-        {
-            FlatBufferNode result = type switch
-            {
-                "string" or "str"     => node.ReadString(fieldIndex, data),
-                "object"              => node.ReadObject(fieldIndex, data),
-
-                "table" or "object[]" => node.ReadArrayObject(fieldIndex, data),
-                "string[]"            => node.ReadArrayString(fieldIndex, data),
-
-                _ => GetStructureNode(node, fieldIndex, data, type),
-            };
-            node.SetFieldHint(fieldIndex, type);
-            node.TrackChildFieldNode(fieldIndex, result);
-            return result;
-        }
-
-        private static FlatBufferNode GetStructureNode(FlatBufferNodeField node, int fieldIndex, byte[] data, string type)
-        {
-            var typecode = CommandUtil.GetTypeCode(type);
-            if (type.Contains("[]")) // table-array
-                return node.GetTableStruct(fieldIndex, data, typecode);
-            return node.GetFieldValue(fieldIndex, data, typecode);
         }
     }
 }
