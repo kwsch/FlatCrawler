@@ -73,6 +73,26 @@ namespace FlatCrawler.Tests.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
+        internal static byte[] pokecamp_foodstuff_table {
+            get {
+                object obj = ResourceManager.GetObject("pokecamp_foodstuff_table", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] pokecamp_kinomi_table {
+            get {
+                object obj = ResourceManager.GetObject("pokecamp_kinomi_table", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
         internal static byte[] shop_data {
             get {
                 object obj = ResourceManager.GetObject("shop_data", resourceCulture);
