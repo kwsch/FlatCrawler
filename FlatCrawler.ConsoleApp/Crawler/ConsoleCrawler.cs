@@ -214,6 +214,11 @@ namespace FlatCrawler.ConsoleApp
                         AnalyzeUnion(data, a);
                         return CrawlResult.Navigate;
 
+                    case "oof" when node is FlatBufferNodeField fn:
+                    {
+                        Console.WriteLine(fn.VTable.GetFieldOrder());
+                        return CrawlResult.Silent;
+                    }
                     case "mfc" when node is IArrayNode an:
                     {
                         int index = 0;

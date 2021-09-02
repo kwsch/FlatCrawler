@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace FlatCrawler.Lib
@@ -28,14 +29,28 @@ namespace FlatCrawler.Lib
             for (int i = 0; i < fieldCount; i++)
             {
                 var ofs = BitConverter.ToInt16(data, offset + (i * 2));
-                result[i] = new VTableFieldInfo(ofs);
+                result[i] = new VTableFieldInfo(i, ofs);
             }
             return result;
+        }
+
+        public string GetFieldOrder()
+        {
+            var tuples = FieldOffsets.Where(z => z.Offset != 0).OrderBy(z => z.Offset);
+            return string.Join(" ", GetFieldPrint(tuples));
         }
 
         public override string ToString() => $@"VTable @ 0x{Location:X}
 VTable Size: {VTableLength}
 Table Size: {TableLength}
-Fields: {FieldOffsets.Length} - {string.Join(" ", FieldOffsets.Select(z => z.ToString()))}";
+Fields: {FieldOffsets.Length}: {string.Join(" ", GetFieldPrint(FieldOffsets))}";
+
+        private const int fieldsPerLine = 8;
+
+        private static IEnumerable<string?> GetFieldPrint(IEnumerable<VTableFieldInfo> fields)
+        {
+            static string PrintField(VTableFieldInfo z, int printedIndex) => $"{(printedIndex % fieldsPerLine == 0 ? Environment.NewLine : "")}{z.Index:00}: {z.Offset:X4}  ";
+            return fields.Select(PrintField);
+        }
     }
 }

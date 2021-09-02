@@ -5,7 +5,7 @@ namespace FlatCrawler.Lib
 {
     public sealed record FlatBufferFieldValue<T> : FlatBufferNode, IStructNode where T : struct
     {
-        public override string Name => Value is not IFormattable f ? Type.ToString() : Type is not TypeCode.Single or TypeCode.Double ? $"{Type} {f:X}" : $"{Type} {f}";
+        public override string Name => Value is not IFormattable f ? Type.ToString() : Type is not TypeCode.Single or TypeCode.Double ? $"{Type} {f:X} ({f})" : $"{Type} {f}";
         public TypeCode Type { get; }
         public T Value { get; }
 
