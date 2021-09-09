@@ -13,6 +13,7 @@ namespace FlatCrawler.Lib
         public string Default { get; init; } = "Default";
         public string LinkedNode { get; init; } = "<---";
         public string RootName { get; init; } = "Root";
+        public int MaxLengthBeginTrim { get; set; } = 20;
 
         public IEnumerable<string> GeneratePrint(FlatBufferNode node)
         {
@@ -83,6 +84,12 @@ namespace FlatCrawler.Lib
 
             AppendNodeData(child!, result, depth + 1);
 
+            if (result.Count > MaxLengthBeginTrim)
+            {
+                result.Add(GetDepthPadded("...", depth));
+                return;
+            }
+
             var resume = Math.Max(a.Entries.Count - MaxSuffixTable - 1, iterMid + 1);
             for (int i = resume; i < a.Entries.Count; i++)
                 result.Add(GetDepthPadded($"[{i}] {GetNodeDescription(node, x, i, cn)}", depth));
@@ -103,6 +110,12 @@ namespace FlatCrawler.Lib
                 return;
 
             AppendNodeData(child!, result, depth + 1);
+
+            if (result.Count > MaxLengthBeginTrim)
+            {
+                result.Add(GetDepthPadded("...", depth));
+                return;
+            }
 
             for (int i = iterMid + 1; i < x.Count; i++)
                 result.Add(GetDepthPadded($"[{i}] {GetNodeDescription(node, x, i, cn)}", depth));
