@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace FlatCrawler.Lib
 {
@@ -22,7 +23,7 @@ namespace FlatCrawler.Lib
 
         private FlatBufferFieldValue<T> GetEntryAtIndex(byte[] data, int entryIndex)
         {
-            var offset = DataTableOffset + (entryIndex * 4);
+            var offset = DataTableOffset + (entryIndex * Marshal.SizeOf<T>());
             return FlatBufferFieldValue<T>.Read(offset, this, data, ArrayType);
         }
 
