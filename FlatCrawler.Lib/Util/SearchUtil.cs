@@ -22,10 +22,18 @@ namespace FlatCrawler.Lib
         {
             foreach (string file in files)
             {
-                var data = File.ReadAllBytes(file);
-                var root = FlatBufferRoot.Read(0, data);
-                if (criteria(root, data))
-                    yield return file;
+                try
+                {
+                    var data = File.ReadAllBytes(file);
+                    var root = FlatBufferRoot.Read(0, data);
+                    if (!criteria(root, data))
+                        continue;
+                }
+                catch (Exception ex)
+                {
+                    throw new ArgumentException($"Unable to parse file: {Path.GetFileNameWithoutExtension(file)}", ex);
+                }
+                yield return file;
             }
         }
     }
