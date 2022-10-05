@@ -7,7 +7,7 @@ Data crawling utility tool & library to reverse engineer [FlatBuffer](https://go
 
 Loading a FlatBuffer binary into the console application will allow manual traversal through the serialized objects, and displays a terminal interface for program input.
 
-An example manual parse of a FlatBuffer used by Pokémon Sword/Shield is provided in the sandbox project.
+An example manual parse of a FlatBuffer used by Pokémon Sword/Shield is provided in the sandbox project. For more detailed information on how to use this project, refer to [the Wiki](../../wiki).
 
 ## Screenshots
 
@@ -15,8 +15,8 @@ An example manual parse of a FlatBuffer used by Pokémon Sword/Shield is provide
 
 ## Building
 
-FlatCrawler is a [.NET 5.0](https://dotnet.microsoft.com/download/dotnet/5.0) application.
+FlatCrawler is a [.NET 6.0](https://dotnet.microsoft.com/download/dotnet/6.0) application.
 
-The executable can be built with any compiler that supports C# 9.
+The executable can be built with any compiler that supports C# 10.
 
 The `.sln` can be opened with IDEs such as [Visual Studio](https://visualstudio.microsoft.com/downloads/).
