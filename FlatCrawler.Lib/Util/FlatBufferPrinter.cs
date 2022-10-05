@@ -59,7 +59,7 @@ namespace FlatCrawler.Lib
                     AppendArrayNodes(result, depth, node, child, a);
                     break;
                 default:
-                    result.Add(GetDepthPadded(node.Name, depth));
+                    result.Add(GetDepthPadded(node.FullNodeName, depth));
                     break;
             }
         }
@@ -127,8 +127,8 @@ namespace FlatCrawler.Lib
                 return Default;
             var entry = x[index];
             if (cmp is not null && ReferenceEquals(cmp, entry))
-                return $"{cmp.Name} {LinkedNode}";
-            return entry?.Name ?? Unexplored;
+                return $"{cmp.FullNodeName} {LinkedNode}";
+            return entry?.FullNodeName ?? Unexplored;
         }
 
         private static string GetDepthPadded(string name, int depth) => name.PadLeft(name.Length + (depth * 2), ' ');

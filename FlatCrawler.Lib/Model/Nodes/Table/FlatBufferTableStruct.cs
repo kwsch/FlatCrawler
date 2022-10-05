@@ -5,7 +5,7 @@ namespace FlatCrawler.Lib
 {
     public sealed record FlatBufferTableStruct<T> : FlatBufferTable<FlatBufferFieldValue<T>> where T : struct
     {
-        public override string Name => $"{ArrayType}[]";
+        public override string TypeName { get => $"{ArrayType}[]"; set { } }
         public TypeCode ArrayType { get; }
 
         private FlatBufferTableStruct(int offset, int length, FlatBufferNode parent, int dataTableOffset, TypeCode typeCode) : base(offset, parent, length, dataTableOffset)

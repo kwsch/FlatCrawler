@@ -5,7 +5,7 @@ namespace FlatCrawler.Lib
 {
     public sealed record FlatBufferStringValue : FlatBufferNode
     {
-        public override string Name => $"string ({Value})";
+        public override string TypeName { get => $"string ({Value})"; set { } }
         public int StringOffset { get; }
         public int StringLengthOffset { get; }
         public int StringLength { get; }

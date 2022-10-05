@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using FlatCrawler.Lib;
 
@@ -55,6 +57,20 @@ namespace FlatCrawler.ConsoleApp
             }
         }
 
+        private FlatBufferNode? GetNodeAtIndex(FlatBufferNode parent, string index)
+        {
+            if (parent is IFieldNode fn)
+            {
+                var fieldIndex = CommandUtil.GetIntPossibleHex(index);
+                return fn.GetField(fieldIndex) ?? throw new ArgumentNullException(nameof(FlatBufferNode), "node not explored yet.");
+            }
+            else if (parent is IArrayNode an)
+            {
+                return an.GetEntry(int.Parse(index));
+            }
+            return null;
+        }
+
         private CrawlResult ProcessCommand(string cmd, ref FlatBufferNode node, byte[] data)
         {
             var sp = cmd.IndexOf(' ');
@@ -69,6 +85,37 @@ namespace FlatCrawler.ConsoleApp
             {
                 switch (c)
                 {
+                    case "n" or "name" or "fieldname":
+                    {
+                        if (!args.Contains(' '))
+                        {
+                            node.Name = args;
+                            return CrawlResult.Update;
+                        }
+
+                        var argSplit = args.Split(' ');
+                        var toRename = GetNodeAtIndex(node, argSplit[0]);
+
+                        if (toRename != null)
+                            toRename.Name = argSplit[1];
+
+                        return CrawlResult.Update;
+                    }
+                    case "t" or "type" or "typename":
+                    {
+                        if (!args.Contains(' '))
+                        {
+                            node.TypeName = args;
+                            return CrawlResult.Update;
+                        }
+
+                        var argSplit = args.Split(' ');
+                        var toRename = GetNodeAtIndex(node, argSplit[0]);
+
+                        if (toRename != null)
+                            toRename.TypeName = argSplit[1];
+                        return CrawlResult.Update;
+                    }
                     case "ro" when node is IFieldNode p:
                     {
                         var fieldIndex = CommandUtil.GetIntPossibleHex(args);
@@ -225,7 +272,7 @@ namespace FlatCrawler.ConsoleApp
                         Console.WriteLine("Reloaded state.");
                         return CrawlResult.Silent;
 
-#region Analysis
+                    #region Analysis
                     case "au" or "analyze" or "union" when node is IArrayNode a:
                         AnalyzeUnion(data, a);
                         return CrawlResult.Navigate;
@@ -243,7 +290,7 @@ namespace FlatCrawler.ConsoleApp
                             ? $"Max field count is {max} @ entry index {index}"
                             : "No nodes have a detectable field count.");
                         return CrawlResult.Silent;
-#endregion
+                    #endregion
 
                     case "up":
                         if (node.Parent is not { } up)

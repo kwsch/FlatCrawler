@@ -57,7 +57,7 @@ namespace FlatCrawler.Lib
                 var obj = node.ReadObject(1, data);
                 var bval = ((FlatBufferFieldValue<byte>)type).Value;
                 var chk = new Union(bval, index, obj.FieldCount);
-                node.ForceNameHint(chk.ToString());
+                node.TypeName = chk.ToString();
 
                 // add or update key if our FieldCount is new or bigger than previously noted for this union type
                 if (!result.TryGetValue(bval, out var c) || c.FieldCount < chk.FieldCount)

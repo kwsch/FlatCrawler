@@ -6,7 +6,7 @@ namespace FlatCrawler.Lib
     {
         public static List<string> GetSummary(this FlatBufferNode node)
         {
-            var result = new List<string> { $"{node.Name} @ 0x{node.Offset:X}" };
+            var result = new List<string> { $"{node.FullNodeName} @ 0x{node.Offset:X}" };
             switch (node)
             {
                 case FlatBufferRoot root:

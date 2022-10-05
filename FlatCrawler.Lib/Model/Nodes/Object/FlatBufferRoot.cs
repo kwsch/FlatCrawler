@@ -6,7 +6,7 @@ namespace FlatCrawler.Lib
     public sealed record FlatBufferRoot : FlatBufferNodeField
     {
         public string Magic { get; }
-        public override string Name => "Root";
+        public override string TypeName { get => "Root"; set { } }
 
         private const string NO_MAGIC = "NO MAGIC";
 

@@ -4,13 +4,12 @@ namespace FlatCrawler.Lib
 {
     public sealed record FlatBufferObject : FlatBufferNodeField
     {
-        private string _name;
-        public override string Name => _name;
-        public void ForceNameHint(string name) => _name = name;
+        public override string TypeName { get; set; } = "Object";
 
-        private FlatBufferObject(int offset, VTable vTable, int dataTableOffset, int vTableOffset, FlatBufferNode parent) : base(offset, vTable, dataTableOffset, vTableOffset, parent)
+        private FlatBufferObject(int offset, VTable vTable, int dataTableOffset, int vTableOffset, FlatBufferNode parent) :
+            base(offset, vTable, dataTableOffset, vTableOffset, parent)
         {
-            _name = $"Object [{vTable.FieldOffsets.Length}]";
+            TypeName = $"Object [{vTable.FieldOffsets.Length}]";
         }
 
         public static FlatBufferObject Read(int offset, FlatBufferNode parent, byte[] data)

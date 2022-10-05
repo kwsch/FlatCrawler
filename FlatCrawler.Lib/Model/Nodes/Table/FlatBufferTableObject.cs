@@ -4,7 +4,33 @@ namespace FlatCrawler.Lib
 {
     public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
     {
-        public override string Name => "Object[]";
+        private string _name = "???";
+        private string _typeName = "Object[]";
+        public override string TypeName
+        {
+            get => _typeName;
+            set
+            {
+                _typeName = value + "[]";
+                foreach (var e in Entries)
+                {
+                    e.TypeName = value;
+                }
+            }
+        }
+
+        public override string Name
+        {
+            get => _name;
+            set
+            {
+                _name = value;
+                for (int i = 0; i < Entries.Length; ++i)
+                {
+                    Entries[i].Name = $"{value}[{i}]";
+                }
+            }
+        }
 
         public override FlatBufferObject GetEntry(int entryIndex) => Entries[entryIndex];
 
