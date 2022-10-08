@@ -20,23 +20,43 @@ namespace FlatCrawler.Lib
         {
             Location = offset;
             VTableLength = BitConverter.ToInt16(data, offset);
-            FieldInfo = ReadFieldOffsets(data, offset + 4, fieldCount);
             DataTableLength = BitConverter.ToInt16(data, offset + SizeOfVTableLength);
             var fieldCount = (VTableLength - HeaderSize) / SizeOfField;
+
+            FieldInfo = new VTableFieldInfo[fieldCount];
+            ReadFieldInfo(data, offset + HeaderSize);
 
             if (FieldInfo.Any(z => z.Offset >= DataTableLength))
                 throw new IndexOutOfRangeException("Field offset is beyond the data table's length.");
         }
 
-        private static VTableFieldInfo[] ReadFieldOffsets(byte[] data, int offset, int fieldCount)
+        private void ReadFieldInfo(byte[] data, int offset)
         {
-            var result = new VTableFieldInfo[fieldCount];
+            int fieldCount = FieldInfo.Length;
+
+            // Store index and offset
+            (int Index, int Offset)[] fields = new (int, int)[fieldCount];
             for (int i = 0; i < fieldCount; i++)
             {
-                result[i] = new VTableFieldInfo(i, ofs);
                 var ofs = BitConverter.ToInt16(data, offset + (i * SizeOfField));
+                fields[i] = new(i, ofs);
             }
-            return result;
+
+            var sortedFields = fields.OrderBy(z => z.Offset).ToArray();
+
+            // Loop in reverse order, starting at the table size
+            // Field size would be Start byte - End byte.
+            // Eg. 12 (table length) - 8 (offset) = size of 4 bytes
+            // Next field would end at 8
+
+            int end = DataTableLength;
+            for (int i = fieldCount - 1; i >= 0; --i)
+            {
+                var index = sortedFields[i].Index;
+                var start = sortedFields[i].Offset;
+                FieldInfo[index] = new(index, start, end - start);
+                end = start;
+            }
         }
 
         public int GetFieldIndex(int offset)

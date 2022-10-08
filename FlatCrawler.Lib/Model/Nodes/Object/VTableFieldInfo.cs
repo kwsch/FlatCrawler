@@ -4,15 +4,17 @@
     {
         public readonly int Index;
         public readonly int Offset;
+        public readonly int Size;
 
         public string? TypeHint { get; set; }
 
-        public VTableFieldInfo(int index, int offset)
+        public VTableFieldInfo(int index, int offset, int size)
         {
             Index = index;
             Offset = offset;
+            Size = size;
         }
 
-        public override string ToString() => $"[{Offset:X4}]";
+        public override string ToString() => $"[{Offset:X4}] (Length: {Size})";
     }
 }
