@@ -316,7 +316,9 @@ namespace FlatCrawler.ConsoleApp
             }
             catch (Exception ex)
             {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine(ex);
+                Console.ForegroundColor = ConsoleColor.White;
                 return CrawlResult.Error;
             }
         }
