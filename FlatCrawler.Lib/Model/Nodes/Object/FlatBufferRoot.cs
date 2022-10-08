@@ -10,7 +10,8 @@ namespace FlatCrawler.Lib
 
         private const string NO_MAGIC = "NO MAGIC";
 
-        private FlatBufferRoot(VTable vTable, string magic, int dataTableOffset, int vTableOffset) : base(0, vTable, dataTableOffset, vTableOffset)
+        private FlatBufferRoot(VTable vTable, string magic, int dataTableOffset, int vTableOffset) :
+            base(0, vTable, dataTableOffset, vTableOffset)
         {
             Magic = magic;
         }

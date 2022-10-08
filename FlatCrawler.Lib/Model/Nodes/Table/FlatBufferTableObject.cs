@@ -34,9 +34,9 @@ namespace FlatCrawler.Lib
 
         public override FlatBufferObject GetEntry(int entryIndex) => Entries[entryIndex];
 
-        private FlatBufferTableObject(int offset, int length, FlatBufferNode parent, int dataTableOffset) : base(offset, parent, length, dataTableOffset)
-        {
-        }
+        private FlatBufferTableObject(int offset, int length, FlatBufferNode parent, int dataTableOffset) :
+            base(offset, parent, length, dataTableOffset)
+        { }
 
         private void ReadArray(byte[] data)
         {

@@ -11,7 +11,8 @@ namespace FlatCrawler.Lib
         public int StringLength { get; }
         public string Value { get; }
 
-        private FlatBufferStringValue(int definedOffset, int stringOffset, int stringLengthOffset, int stringLength, string str, FlatBufferNode parent) : base(definedOffset, parent)
+        private FlatBufferStringValue(int definedOffset, int stringLengthOffset, int stringOffset, int stringLength, string str, FlatBufferNode parent) :
+            base(definedOffset, parent)
         {
             StringOffset = stringOffset;
             StringLengthOffset = stringLengthOffset;
