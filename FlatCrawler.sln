@@ -1,13 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31605.320
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32901.215
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlatCrawler.ConsoleApp", "FlatCrawler.ConsoleApp\FlatCrawler.ConsoleApp.csproj", "{321A2EDD-5CEE-4AE4-9199-5D87879D8198}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlatCrawler.Lib", "FlatCrawler.Lib\FlatCrawler.Lib.csproj", "{71B14661-822B-4871-97A2-BCCCB797EEC3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlatCrawler.Tests", "FlatCrawler.Tests\FlatCrawler.Tests.csproj", "{5B72C1A2-BCD3-44FF-A62D-AF645337E14C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlatCrawler.Tests", "FlatCrawler.Tests\FlatCrawler.Tests.csproj", "{5B72C1A2-BCD3-44FF-A62D-AF645337E14C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8F5C14E7-9153-4765-8689-E55EC95BCA22}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
