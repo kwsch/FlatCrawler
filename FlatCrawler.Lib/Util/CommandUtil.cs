@@ -54,7 +54,7 @@ namespace FlatCrawler.Lib
             FlatBufferNode result = node.ReadNode(fieldIndex, data, code, asArray);
 
             node.SetFieldHint(fieldIndex, type);
-            node.TrackChildFieldNode(fieldIndex, result);
+            node.TrackChildFieldNode(fieldIndex, code, asArray, result);
             return result;
         }
     }
