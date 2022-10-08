@@ -15,13 +15,12 @@ namespace FlatCrawler.ConsoleApp
         private readonly List<string> ProcessedCommands = new();
         private const string SaveStatePath = "lines.txt";
 
-        private readonly byte[] Data;
         private readonly string FilePath;
 
         public ConsoleCrawler(string path, byte[] data)
         {
             FilePath = path;
-            Data = data;
+            CommandUtil.Data = data;
         }
 
         public void CrawlLoop()
@@ -30,7 +29,7 @@ namespace FlatCrawler.ConsoleApp
             Console.WriteLine($"Crawling {Console.Title = fn}...");
             Console.WriteLine();
 
-            FlatBufferNode node = FlatBufferRoot.Read(0, Data);
+            FlatBufferNode node = FlatBufferRoot.Read(0, CommandUtil.Data.ToArray());
             node.PrintTree();
 
             Console.OutputEncoding = Encoding.UTF8; // japanese strings will show up as boxes rather than ????
@@ -40,7 +39,7 @@ namespace FlatCrawler.ConsoleApp
                 var cmd = Console.ReadLine();
                 if (cmd is null)
                     break;
-                var result = ProcessCommand(cmd, ref node, Data);
+                var result = ProcessCommand(cmd, ref node, CommandUtil.Data.ToArray());
                 if (result == CrawlResult.Quit)
                     break;
 

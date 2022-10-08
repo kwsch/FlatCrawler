@@ -5,6 +5,9 @@ namespace FlatCrawler.Lib
 {
     public static class CommandUtil
     {
+        // TODO: Make a nice wrapper class for file data
+        public static ReadOnlyMemory<byte> Data { get; set; }
+
         private static TypeCode GetTypeCode(string type) => type.Replace(" ", "").Replace("[]", "") switch
         {
             "bool" => TypeCode.Boolean,
