@@ -11,13 +11,18 @@ namespace FlatCrawler.Lib
         public readonly short DataTableLength;
         public readonly VTableFieldInfo[] FieldInfo;
 
+        private const int SizeOfVTableLength = sizeof(ushort);
+        private const int SizeOfDataTableLength = sizeof(ushort);
+        private const int SizeOfField = sizeof(ushort);
+        public const int HeaderSize = SizeOfVTableLength + SizeOfDataTableLength;
+
         public VTable(byte[] data, int offset)
         {
             Location = offset;
             VTableLength = BitConverter.ToInt16(data, offset);
-            var fieldCount = (VTableLength - 4) / 2;
             FieldInfo = ReadFieldOffsets(data, offset + 4, fieldCount);
-            DataTableLength = BitConverter.ToInt16(data, offset + 2);
+            DataTableLength = BitConverter.ToInt16(data, offset + SizeOfVTableLength);
+            var fieldCount = (VTableLength - HeaderSize) / SizeOfField;
 
             if (FieldInfo.Any(z => z.Offset >= DataTableLength))
                 throw new IndexOutOfRangeException("Field offset is beyond the data table's length.");
@@ -28,8 +33,8 @@ namespace FlatCrawler.Lib
             var result = new VTableFieldInfo[fieldCount];
             for (int i = 0; i < fieldCount; i++)
             {
-                var ofs = BitConverter.ToInt16(data, offset + (i * 2));
                 result[i] = new VTableFieldInfo(i, ofs);
+                var ofs = BitConverter.ToInt16(data, offset + (i * SizeOfField));
             }
             return result;
         }

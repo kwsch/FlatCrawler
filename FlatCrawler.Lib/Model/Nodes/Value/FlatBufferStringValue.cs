@@ -11,6 +11,7 @@ namespace FlatCrawler.Lib
         public int StringLength { get; }
         public string Value { get; }
 
+        public const int HeaderSize = sizeof(int);
         private FlatBufferStringValue(int definedOffset, int stringLengthOffset, int stringOffset, int stringLength, string str, FlatBufferNode parent) :
             base(definedOffset, parent)
         {
@@ -24,7 +25,7 @@ namespace FlatCrawler.Lib
         {
             var encodedOffset = BitConverter.ToInt32(data, offset) + offset;
             var len = BitConverter.ToInt32(data, encodedOffset);
-            int charOffset = encodedOffset + 4;
+            int charOffset = encodedOffset + HeaderSize;
             var str = Encoding.UTF8.GetString(data, charOffset, len);
             return new FlatBufferStringValue(offset, encodedOffset, charOffset, len, str, parent);
         }
