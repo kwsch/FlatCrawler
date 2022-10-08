@@ -12,20 +12,21 @@ namespace FlatCrawler.Lib
         private FlatBufferNode?[] Fields { get; }
         public IReadOnlyList<FlatBufferNode?> AllFields => Fields;
 
-        public bool HasField(int fieldIndex) => fieldIndex < VTable.FieldOffsets.Length && VTable.FieldOffsets[fieldIndex].Offset != 0;
+        public bool HasField(int fieldIndex) => fieldIndex < VTable.FieldInfo.Length && VTable.FieldInfo[fieldIndex].Offset != 0;
         public int FieldCount => Fields.Length;
 
-        protected FlatBufferNodeField(int offset, VTable vTable, int dataTableOffset, int vTableOffset, FlatBufferNode? parent = null) : base(offset, parent)
+        protected FlatBufferNodeField(int offset, VTable vTable, int dataTableOffset, int vTableOffset, FlatBufferNode? parent = null) :
+            base(offset, parent)
         {
             VTable = vTable;
             DataTableOffset = dataTableOffset;
             VTableOffset = vTableOffset;
-            Fields = new FlatBufferNode[vTable.FieldOffsets.Length];
+            Fields = new FlatBufferNode[vTable.FieldInfo.Length];
         }
 
         public int GetFieldOffset(int fieldIndex)
         {
-            var fo = VTable.FieldOffsets[fieldIndex];
+            var fo = VTable.FieldInfo[fieldIndex];
             if (fo.Offset == 0)
                 throw new ArgumentException("Field not present in Table");
             return DataTableOffset + fo.Offset;
@@ -54,10 +55,11 @@ namespace FlatCrawler.Lib
         protected static VTable ReadVTable(int offset, byte[] data) => new(data, offset);
 
         public void TrackChildFieldNode(int fieldIndex, FlatBufferNode node) => Fields[fieldIndex] = node;
-        public void SetFieldHint(int fieldIndex, string type) => VTable.FieldOffsets[fieldIndex].TypeHint = type;
+        public void SetFieldHint(int fieldIndex, string type) => VTable.FieldInfo[fieldIndex].TypeHint = type;
 
         public FlatBufferNode GetFieldValue(int fieldIndex, byte[] data, TypeCode type) => type switch
         {
+#pragma warning disable format
             TypeCode.Boolean => ReadBool   (fieldIndex, data),
 
             TypeCode.SByte   => ReadInt8   (fieldIndex, data),
@@ -72,11 +74,16 @@ namespace FlatCrawler.Lib
 
             TypeCode.Single  => ReadFloat  (fieldIndex, data),
             TypeCode.Double  => ReadDouble (fieldIndex, data),
+
+            TypeCode.String  => ReadString (fieldIndex, data),
+            TypeCode.Object  => ReadObject (fieldIndex, data),
+#pragma warning restore format
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
         };
 
         public FlatBufferNode GetTableStruct(int fieldIndex, byte[] data, TypeCode type) => type switch
         {
+#pragma warning disable format
             TypeCode.Boolean =>  ReadArrayBool   (fieldIndex, data),
 
             TypeCode.SByte   =>  ReadArrayInt8   (fieldIndex, data),
@@ -91,9 +98,21 @@ namespace FlatCrawler.Lib
 
             TypeCode.Single  =>  ReadArrayFloat  (fieldIndex, data),
             TypeCode.Double  =>  ReadArrayDouble (fieldIndex, data),
+
+            TypeCode.String  =>  ReadArrayString (fieldIndex, data),
+            TypeCode.Object  =>  ReadArrayObject (fieldIndex, data),
+#pragma warning restore format
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
         };
 
+        public FlatBufferNode ReadNode(int fieldIndex, byte[] data, TypeCode type, bool asArray)
+        {
+            if (asArray)
+                return GetTableStruct(fieldIndex, data, type);
+            return GetFieldValue(fieldIndex, data, type);
+        }
+
+#pragma warning disable format
         public FlatBufferObject      ReadObject     (int fieldIndex, byte[] data) => FlatBufferObject     .Read(this, fieldIndex, data);
         public FlatBufferStringValue ReadString     (int fieldIndex, byte[] data) => FlatBufferStringValue.Read(this, fieldIndex, data);
         public FlatBufferTableObject ReadArrayObject(int fieldIndex, byte[] data) => FlatBufferTableObject.Read(this, fieldIndex, data);
@@ -128,5 +147,6 @@ namespace FlatCrawler.Lib
 
         public FlatBufferTableStruct<float > ReadArrayFloat  (int fieldIndex, byte[] data) => FlatBufferTableStruct<float >.Read(this, fieldIndex, data, TypeCode.Single );
         public FlatBufferTableStruct<double> ReadArrayDouble (int fieldIndex, byte[] data) => FlatBufferTableStruct<double>.Read(this, fieldIndex, data, TypeCode.Double );
+#pragma warning restore format
     }
 }

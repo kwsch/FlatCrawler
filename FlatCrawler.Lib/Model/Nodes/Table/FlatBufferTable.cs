@@ -11,7 +11,8 @@ namespace FlatCrawler.Lib
 
         IReadOnlyList<FlatBufferNode> IArrayNode.Entries => Entries;
 
-        protected FlatBufferTable(int offset, FlatBufferNode parent, int length, int dataTableOffset) : base(offset, parent)
+        protected FlatBufferTable(int offset, FlatBufferNode parent, int length, int dataTableOffset) :
+            base(offset, parent)
         {
             Length = length;
             DataTableOffset = dataTableOffset;

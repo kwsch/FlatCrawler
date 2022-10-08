@@ -8,30 +8,55 @@ namespace FlatCrawler.Lib
     {
         private readonly int Location;
         public readonly short VTableLength;
-        private readonly short TableLength;
-        public readonly VTableFieldInfo[] FieldOffsets;
+        public readonly short DataTableLength;
+        public readonly VTableFieldInfo[] FieldInfo;
+
+        private const int SizeOfVTableLength = sizeof(ushort);
+        private const int SizeOfDataTableLength = sizeof(ushort);
+        private const int SizeOfField = sizeof(ushort);
+        public const int HeaderSize = SizeOfVTableLength + SizeOfDataTableLength;
 
         public VTable(byte[] data, int offset)
         {
             Location = offset;
             VTableLength = BitConverter.ToInt16(data, offset);
-            TableLength = BitConverter.ToInt16(data, offset + 2);
-            var fieldCount = (VTableLength - 4) / 2;
-            FieldOffsets = ReadFieldOffsets(data, offset + 4, fieldCount);
+            DataTableLength = BitConverter.ToInt16(data, offset + SizeOfVTableLength);
+            var fieldCount = (VTableLength - HeaderSize) / SizeOfField;
 
-            if (FieldOffsets.Any(z => z.Offset >= TableLength))
+            FieldInfo = new VTableFieldInfo[fieldCount];
+            ReadFieldInfo(data, offset + HeaderSize);
+
+            if (FieldInfo.Any(z => z.Offset >= DataTableLength))
                 throw new IndexOutOfRangeException("Field offset is beyond the data table's length.");
         }
 
-        private static VTableFieldInfo[] ReadFieldOffsets(byte[] data, int offset, int fieldCount)
+        private void ReadFieldInfo(byte[] data, int offset)
         {
-            var result = new VTableFieldInfo[fieldCount];
+            int fieldCount = FieldInfo.Length;
+
+            // Store index and offset
+            (int Index, int Offset)[] fields = new (int, int)[fieldCount];
             for (int i = 0; i < fieldCount; i++)
             {
-                var ofs = BitConverter.ToInt16(data, offset + (i * 2));
-                result[i] = new VTableFieldInfo(i, ofs);
+                var ofs = BitConverter.ToInt16(data, offset + (i * SizeOfField));
+                fields[i] = new(i, ofs);
             }
-            return result;
+
+            var sortedFields = fields.OrderBy(z => z.Offset).ToArray();
+
+            // Loop in reverse order, starting at the table size
+            // Field size would be Start byte - End byte.
+            // Eg. 12 (table length) - 8 (offset) = size of 4 bytes
+            // Next field would end at 8
+
+            int end = DataTableLength;
+            for (int i = fieldCount - 1; i >= 0; --i)
+            {
+                var index = sortedFields[i].Index;
+                var start = sortedFields[i].Offset;
+                FieldInfo[index] = new(index, start, end - start);
+                end = start;
+            }
         }
 
         public int GetFieldIndex(int offset)
@@ -39,7 +64,7 @@ namespace FlatCrawler.Lib
             if (offset == 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), "Value of 0 for offset is not valid (Default Value)");
 
-            var index = Array.FindIndex(FieldOffsets, z => z.Offset == offset);
+            var index = Array.FindIndex(FieldInfo, z => z.Offset == offset);
             if (index == -1)
                 throw new ArgumentOutOfRangeException(nameof(offset), "Unable to find the field index with that offset.");
 
@@ -48,14 +73,14 @@ namespace FlatCrawler.Lib
 
         public string GetFieldOrder(int bias = 0)
         {
-            var tuples = FieldOffsets.Where(z => z.Offset != 0).OrderBy(z => z.Offset);
+            var tuples = FieldInfo.Where(z => z.Offset != 0).OrderBy(z => z.Offset);
             return string.Join(" ", GetFieldPrint(tuples, bias));
         }
 
         public override string ToString() => $@"VTable @ 0x{Location:X}
 VTable Size: {VTableLength}
-Table Size: {TableLength}
-Fields: {FieldOffsets.Length}: {string.Join(" ", GetFieldPrint(FieldOffsets))}";
+DataTable Size: {DataTableLength}
+Fields: {FieldInfo.Length}: {string.Join(" ", GetFieldPrint(FieldInfo))}";
 
         private const int fieldsPerLine = 8;
 

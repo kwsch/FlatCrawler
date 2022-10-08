@@ -4,6 +4,9 @@ namespace FlatCrawler.Lib
 {
     public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
     {
+        public const int HeaderSize = 4;
+        public const int EntrySize = 4;
+
         private string _name = "???";
         private string _typeName = "Object[]";
         public override string TypeName
@@ -34,9 +37,9 @@ namespace FlatCrawler.Lib
 
         public override FlatBufferObject GetEntry(int entryIndex) => Entries[entryIndex];
 
-        private FlatBufferTableObject(int offset, int length, FlatBufferNode parent, int dataTableOffset) : base(offset, parent, length, dataTableOffset)
-        {
-        }
+        private FlatBufferTableObject(int offset, int length, FlatBufferNode parent, int dataTableOffset) :
+            base(offset, parent, length, dataTableOffset)
+        { }
 
         private void ReadArray(byte[] data)
         {
@@ -46,7 +49,7 @@ namespace FlatCrawler.Lib
 
         private FlatBufferObject GetEntryAtIndex(byte[] data, int entryIndex)
         {
-            var arrayEntryPointerOffset = DataTableOffset + (entryIndex * 4);
+            var arrayEntryPointerOffset = DataTableOffset + (entryIndex * EntrySize);
             var dataTablePointerShift = BitConverter.ToInt32(data, arrayEntryPointerOffset);
             var dataTableOffset = arrayEntryPointerOffset + dataTablePointerShift;
 
@@ -56,7 +59,7 @@ namespace FlatCrawler.Lib
         public static FlatBufferTableObject Read(int offset, FlatBufferNode parent, byte[] data)
         {
             int length = BitConverter.ToInt32(data, offset);
-            var node = new FlatBufferTableObject(offset, length, parent, offset + 4);
+            var node = new FlatBufferTableObject(offset, length, parent, offset + HeaderSize);
             node.ReadArray(data);
             return node;
         }

@@ -5,20 +5,25 @@ namespace FlatCrawler.Lib
 {
     public sealed record FlatBufferRoot : FlatBufferNodeField
     {
-        public string Magic { get; }
-        public override string TypeName { get => "Root"; set { } }
-
+        public const int HeaderSize = sizeof(int);
+        private const int MaxMagicLength = 4;
         private const string NO_MAGIC = "NO MAGIC";
 
-        private FlatBufferRoot(VTable vTable, string magic, int dataTableOffset, int vTableOffset) : base(0, vTable, dataTableOffset, vTableOffset)
+        public string Magic { get; }
+        public int MagicLength { get; }
+        public override string TypeName { get => "Root"; set { } }
+
+        private FlatBufferRoot(VTable vTable, string magic, int dataTableOffset, int vTableOffset) :
+            base(0, vTable, dataTableOffset, vTableOffset)
         {
             Magic = magic;
+            MagicLength = dataTableOffset == HeaderSize ? 0 : magic.Length;
         }
 
         public static FlatBufferRoot Read(int offset, byte[] data)
         {
             int dataTableOffset = BitConverter.ToInt32(data, offset) + offset;
-            var magic = dataTableOffset == 4 ? NO_MAGIC : ReadMagic(offset + 4, data);
+            var magic = dataTableOffset == HeaderSize ? NO_MAGIC : ReadMagic(offset + HeaderSize, data);
 
             // Read VTable
             var vTableOffset = GetVtableOffset(dataTableOffset, data, true);
@@ -34,8 +39,8 @@ namespace FlatCrawler.Lib
 
         private static int GetMagicCharCount(int offset, byte[] data)
         {
-            var count = Array.IndexOf<byte>(data, 0, offset, 4) - offset;
-            return count <= -1 ? 4 : count;
+            var count = Array.IndexOf<byte>(data, 0, offset, MaxMagicLength) - offset;
+            return count <= -1 ? MaxMagicLength : count;
         }
     }
 }
