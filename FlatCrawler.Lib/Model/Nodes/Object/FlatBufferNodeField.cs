@@ -72,6 +72,9 @@ namespace FlatCrawler.Lib
 
             TypeCode.Single  => ReadFloat  (fieldIndex, data),
             TypeCode.Double  => ReadDouble (fieldIndex, data),
+
+            TypeCode.String  => ReadString (fieldIndex, data),
+            TypeCode.Object  => ReadObject (fieldIndex, data),
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
         };
 
@@ -91,8 +94,18 @@ namespace FlatCrawler.Lib
 
             TypeCode.Single  =>  ReadArrayFloat  (fieldIndex, data),
             TypeCode.Double  =>  ReadArrayDouble (fieldIndex, data),
+
+            TypeCode.String  =>  ReadArrayString (fieldIndex, data),
+            TypeCode.Object  =>  ReadArrayObject (fieldIndex, data),
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
         };
+
+        public FlatBufferNode ReadNode(int fieldIndex, byte[] data, TypeCode type, bool asArray)
+        {
+            if (asArray)
+                return GetTableStruct(fieldIndex, data, type);
+            return GetFieldValue(fieldIndex, data, type);
+        }
 
         public FlatBufferObject      ReadObject     (int fieldIndex, byte[] data) => FlatBufferObject     .Read(this, fieldIndex, data);
         public FlatBufferStringValue ReadString     (int fieldIndex, byte[] data) => FlatBufferStringValue.Read(this, fieldIndex, data);

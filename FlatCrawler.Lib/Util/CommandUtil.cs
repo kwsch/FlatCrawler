@@ -21,6 +21,9 @@ namespace FlatCrawler.Lib
 
             "float" => TypeCode.Single,
             "double" => TypeCode.Double,
+
+            "string" or "str" => TypeCode.String,
+            "object" or "obj" or "table" => TypeCode.Object,
             _ => TypeCode.Empty,
         };
 
@@ -37,33 +40,19 @@ namespace FlatCrawler.Lib
         public static FlatBufferNode ReadNode(this FlatBufferNode node, int fieldIndex, string type, byte[] data) => node switch
         {
             IArrayNode a => a.GetEntry(fieldIndex),
-            FlatBufferNodeField r => ReadNode(r, fieldIndex, data, type),
+            FlatBufferNodeField r => r.ReadNode(fieldIndex, data, type),
             _ => throw new ArgumentException("Field not present in VTable"),
         };
 
-        private static FlatBufferNode ReadNode(FlatBufferNodeField node, int fieldIndex, byte[] data, string type)
+        private static FlatBufferNode ReadNode(this FlatBufferNodeField node, int fieldIndex, byte[] data, string type)
         {
-            FlatBufferNode result = type switch
-            {
-                "string" or "str" => node.ReadString(fieldIndex, data),
-                "object" => node.ReadObject(fieldIndex, data),
+            var code = GetTypeCode(type);
+            bool asArray = type == "table" || type.Contains("[]");
+            FlatBufferNode result = node.ReadNode(fieldIndex, data, code, asArray);
 
-                "table" or "object[]" => node.ReadArrayObject(fieldIndex, data),
-                "string[]" => node.ReadArrayString(fieldIndex, data),
-
-                _ => GetStructureNode(node, fieldIndex, data, type),
-            };
             node.SetFieldHint(fieldIndex, type);
             node.TrackChildFieldNode(fieldIndex, result);
             return result;
-        }
-
-        private static FlatBufferNode GetStructureNode(FlatBufferNodeField node, int fieldIndex, byte[] data, string type)
-        {
-            var typecode = GetTypeCode(type);
-            if (type.Contains("[]")) // table-array
-                return node.GetTableStruct(fieldIndex, data, typecode);
-            return node.GetFieldValue(fieldIndex, data, typecode);
         }
     }
 }
