@@ -1,35 +1,14 @@
-﻿using System;
+namespace FlatCrawler.Lib;
 
-namespace FlatCrawler.Lib
+public abstract record FlatBufferNode(int Offset, FlatBufferNode? Parent = null)
 {
-    public sealed record FlatBufferNodeType
-    {
-        public TypeCode Type { get; init; } = TypeCode.Empty;
-        public bool IsArray { get; init; } = false;
+    public readonly FlatBufferNode? Parent = Parent;
+    public readonly int Offset = Offset;
 
-        public FlatBufferNodeType(TypeCode type, bool isArray)
-        {
-            Type = type;
-            IsArray = isArray;
-        }
-    }
+    public virtual string Name { get; set; } = "???";
+    public abstract string TypeName { get; set; }
 
-    public abstract record FlatBufferNode
-    {
-        public readonly FlatBufferNode? Parent;
-        public readonly int Offset;
+    public string FullNodeName => $"{Name} {{{TypeName}}}";
 
-        public virtual string Name { get; set; } = "???";
-        public abstract string TypeName { get; set; }
-
-        public string FullNodeName => $"{Name} {{{TypeName}}}";
-
-        protected FlatBufferNode(int offset, FlatBufferNode? parent = null)
-        {
-            Offset = offset;
-            Parent = parent;
-        }
-
-        public virtual int GetChildIndex(FlatBufferNode? child) => -1;
-    }
+    public virtual int GetChildIndex(FlatBufferNode? child) => -1;
 }
