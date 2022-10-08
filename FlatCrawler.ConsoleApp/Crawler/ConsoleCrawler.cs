@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using FlatCrawler.Lib;
 
@@ -143,7 +141,7 @@ namespace FlatCrawler.ConsoleApp
                         {
                             var index = CommandUtil.GetIntPossibleHex(args);
                             node = p.GetField(index) ?? throw new ArgumentNullException(nameof(FlatBufferNode), "node not explored yet.");
-                            return CrawlResult.Silent;
+                            return CrawlResult.Navigate;
                         }
 
                         var (fieldIndex, fieldType) = CommandUtil.GetDualArgs(args);
