@@ -12,7 +12,7 @@ namespace FlatCrawler.Lib
         private FlatBufferNode?[] Fields { get; }
         public IReadOnlyList<FlatBufferNode?> AllFields => Fields;
 
-        public bool HasField(int fieldIndex) => fieldIndex < VTable.FieldOffsets.Length && VTable.FieldOffsets[fieldIndex].Offset != 0;
+        public bool HasField(int fieldIndex) => fieldIndex < VTable.FieldInfo.Length && VTable.FieldInfo[fieldIndex].Offset != 0;
         public int FieldCount => Fields.Length;
 
         protected FlatBufferNodeField(int offset, VTable vTable, int dataTableOffset, int vTableOffset, FlatBufferNode? parent = null) : base(offset, parent)
@@ -20,12 +20,12 @@ namespace FlatCrawler.Lib
             VTable = vTable;
             DataTableOffset = dataTableOffset;
             VTableOffset = vTableOffset;
-            Fields = new FlatBufferNode[vTable.FieldOffsets.Length];
+            Fields = new FlatBufferNode[vTable.FieldInfo.Length];
         }
 
         public int GetFieldOffset(int fieldIndex)
         {
-            var fo = VTable.FieldOffsets[fieldIndex];
+            var fo = VTable.FieldInfo[fieldIndex];
             if (fo.Offset == 0)
                 throw new ArgumentException("Field not present in Table");
             return DataTableOffset + fo.Offset;
@@ -54,7 +54,7 @@ namespace FlatCrawler.Lib
         protected static VTable ReadVTable(int offset, byte[] data) => new(data, offset);
 
         public void TrackChildFieldNode(int fieldIndex, FlatBufferNode node) => Fields[fieldIndex] = node;
-        public void SetFieldHint(int fieldIndex, string type) => VTable.FieldOffsets[fieldIndex].TypeHint = type;
+        public void SetFieldHint(int fieldIndex, string type) => VTable.FieldInfo[fieldIndex].TypeHint = type;
 
         public FlatBufferNode GetFieldValue(int fieldIndex, byte[] data, TypeCode type) => type switch
         {

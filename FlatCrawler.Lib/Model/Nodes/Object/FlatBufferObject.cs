@@ -9,7 +9,7 @@ namespace FlatCrawler.Lib
         private FlatBufferObject(int offset, VTable vTable, int dataTableOffset, int vTableOffset, FlatBufferNode parent) :
             base(offset, vTable, dataTableOffset, vTableOffset, parent)
         {
-            TypeName = $"Object [{vTable.FieldOffsets.Length}]";
+            TypeName = $"Object [{vTable.FieldInfo.Length}]";
         }
 
         public static FlatBufferObject Read(int offset, FlatBufferNode parent, byte[] data)

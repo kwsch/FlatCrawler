@@ -9,7 +9,7 @@ namespace FlatCrawler.Lib
         private readonly int Location;
         public readonly short VTableLength;
         private readonly short TableLength;
-        public readonly VTableFieldInfo[] FieldOffsets;
+        public readonly VTableFieldInfo[] FieldInfo;
 
         public VTable(byte[] data, int offset)
         {
@@ -17,9 +17,9 @@ namespace FlatCrawler.Lib
             VTableLength = BitConverter.ToInt16(data, offset);
             TableLength = BitConverter.ToInt16(data, offset + 2);
             var fieldCount = (VTableLength - 4) / 2;
-            FieldOffsets = ReadFieldOffsets(data, offset + 4, fieldCount);
+            FieldInfo = ReadFieldOffsets(data, offset + 4, fieldCount);
 
-            if (FieldOffsets.Any(z => z.Offset >= TableLength))
+            if (FieldInfo.Any(z => z.Offset >= TableLength))
                 throw new IndexOutOfRangeException("Field offset is beyond the data table's length.");
         }
 
@@ -39,7 +39,7 @@ namespace FlatCrawler.Lib
             if (offset == 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), "Value of 0 for offset is not valid (Default Value)");
 
-            var index = Array.FindIndex(FieldOffsets, z => z.Offset == offset);
+            var index = Array.FindIndex(FieldInfo, z => z.Offset == offset);
             if (index == -1)
                 throw new ArgumentOutOfRangeException(nameof(offset), "Unable to find the field index with that offset.");
 
@@ -48,14 +48,14 @@ namespace FlatCrawler.Lib
 
         public string GetFieldOrder(int bias = 0)
         {
-            var tuples = FieldOffsets.Where(z => z.Offset != 0).OrderBy(z => z.Offset);
+            var tuples = FieldInfo.Where(z => z.Offset != 0).OrderBy(z => z.Offset);
             return string.Join(" ", GetFieldPrint(tuples, bias));
         }
 
         public override string ToString() => $@"VTable @ 0x{Location:X}
 VTable Size: {VTableLength}
-Table Size: {TableLength}
-Fields: {FieldOffsets.Length}: {string.Join(" ", GetFieldPrint(FieldOffsets))}";
+DataTable Size: {TableLength}
+Fields: {FieldInfo.Length}: {string.Join(" ", GetFieldPrint(FieldInfo))}";
 
         private const int fieldsPerLine = 8;
 
