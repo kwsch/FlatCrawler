@@ -1,7 +1,63 @@
 ﻿using System;
+using System.Linq;
 
 namespace FlatCrawler.Lib
 {
+    public sealed record MemberTypeChangedArgs
+    {
+        public int MemberIndex { get; init; }
+        public FlatBufferNodeType OldType { get; init; }
+        public FlatBufferNodeType NewType { get; init; }
+
+        public MemberTypeChangedArgs(int memberIndex, FlatBufferNodeType oldType, FlatBufferNodeType newType)
+        {
+            MemberIndex = memberIndex;
+            OldType = oldType;
+            NewType = newType;
+        }
+    }
+
+    public sealed record FlatBufferTableClass
+    {
+        public event EventHandler<MemberTypeChangedArgs>? MemberTypeChanged;
+
+        private readonly FlatBufferNodeType[] MemberTypes;
+
+        private readonly FlatBufferTableClass[] SubClasses;
+
+        public FlatBufferTableClass(int fieldCount)
+        {
+            MemberTypes = new FlatBufferNodeType[fieldCount];
+            SubClasses = new FlatBufferTableClass[fieldCount];
+        }
+
+        public bool HasSubClass(int memberIndex) => SubClasses[memberIndex] != null;
+        public FlatBufferTableClass GetSubClass(int memberIndex) => SubClasses[memberIndex];
+        public void RegisterSubClass(int memberIndex, int subClassFieldCount)
+        {
+            if (SubClasses[memberIndex] != null)
+                return;
+
+            MemberTypes[memberIndex] = new(TypeCode.Object, true);
+            SubClasses[memberIndex] = new FlatBufferTableClass(subClassFieldCount);
+        }
+
+        public bool HasMemberType(int memberIndex) => MemberTypes[memberIndex] != null;
+        public FlatBufferNodeType GetMemberType(int memberIndex) => MemberTypes[memberIndex];
+        public void SetMemberType(int memberIndex, TypeCode type, bool asArray)
+        {
+            var oldType = MemberTypes[memberIndex];
+            var newType = new FlatBufferNodeType(type, asArray);
+            MemberTypes[memberIndex] = newType;
+            OnMemberTypeChanged(new(memberIndex, oldType, newType));
+        }
+
+        private void OnMemberTypeChanged(MemberTypeChangedArgs args)
+        {
+            MemberTypeChanged?.Invoke(this, args);
+        }
+    }
+
     public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
     {
         public const int HeaderSize = 4;
@@ -35,6 +91,8 @@ namespace FlatCrawler.Lib
             }
         }
 
+        private FlatBufferTableClass ObjectClass = null!; // will always be set by static initializer
+
         public override FlatBufferObject GetEntry(int entryIndex) => Entries[entryIndex];
 
         private FlatBufferTableObject(int offset, int length, FlatBufferNode parent, int dataTableOffset) :
@@ -56,14 +114,48 @@ namespace FlatCrawler.Lib
             return FlatBufferObject.Read(arrayEntryPointerOffset, this, data, dataTableOffset);
         }
 
-        public static FlatBufferTableObject Read(int offset, FlatBufferNode parent, byte[] data)
+        public static FlatBufferTableObject Read(int offset, FlatBufferNode parent, int fieldIndex, byte[] data)
         {
             int length = BitConverter.ToInt32(data, offset);
             var node = new FlatBufferTableObject(offset, length, parent, offset + HeaderSize);
             node.ReadArray(data);
+
+            // If this table is part of another table, link the ObjectTypes (class) reference
+            if (node.Parent?.Parent is FlatBufferTableObject t)
+            {
+                if (!t.ObjectClass.HasSubClass(fieldIndex))
+                {
+                    int memberCount = node.Entries.Select(x => x.VTable.FieldInfo.Length).Max();
+                    t.ObjectClass.RegisterSubClass(fieldIndex, memberCount);
+                }
+
+                node.ObjectClass = t.ObjectClass.GetSubClass(fieldIndex);
+            }
+            else
+            {
+                int memberCount = node.Entries.Select(x => x.VTable.FieldInfo.Length).Max();
+                node.ObjectClass = new FlatBufferTableClass(memberCount);
+            }
+
+            node.ObjectClass.MemberTypeChanged += node.ObjectClass_MemberTypeChanged;
+
             return node;
         }
 
-        public static FlatBufferTableObject Read(FlatBufferNodeField parent, int fieldIndex, byte[] data) => Read(parent.GetReferenceOffset(fieldIndex, data), parent, data);
+        public static FlatBufferTableObject Read(FlatBufferNodeField parent, int fieldIndex, byte[] data) => Read(parent.GetReferenceOffset(fieldIndex, data), parent, fieldIndex, data);
+
+        private void ObjectClass_MemberTypeChanged(object? sender, MemberTypeChangedArgs e)
+        {
+            foreach (var entry in Entries)
+            {
+                if (entry.HasField(e.MemberIndex))
+                    entry.UpdateNodeType(e.MemberIndex, CommandUtil.Data.ToArray(), e.NewType.Type, e.NewType.IsArray);
+            }
+        }
+
+        public void OnFieldTypeChanged(int fieldIndex, TypeCode code, bool asArray, FlatBufferNode source)
+        {
+            ObjectClass.SetMemberType(fieldIndex, code, asArray);
+        }
     }
 }

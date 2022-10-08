@@ -54,7 +54,17 @@ namespace FlatCrawler.Lib
 
         protected static VTable ReadVTable(int offset, byte[] data) => new(data, offset);
 
-        public void TrackChildFieldNode(int fieldIndex, FlatBufferNode node) => Fields[fieldIndex] = node;
+        public void TrackChildFieldNode(int fieldIndex, TypeCode code, bool asArray, FlatBufferNode node)
+        {
+            // Table objects have the same data types for each entry
+            if (Parent is FlatBufferTableObject t)
+            {
+                t.OnFieldTypeChanged(fieldIndex, code, asArray, this);
+            }
+
+            Fields[fieldIndex] = node;
+        }
+
         public void SetFieldHint(int fieldIndex, string type) => VTable.FieldInfo[fieldIndex].TypeHint = type;
 
         public FlatBufferNode GetFieldValue(int fieldIndex, byte[] data, TypeCode type) => type switch
@@ -104,6 +114,11 @@ namespace FlatCrawler.Lib
 #pragma warning restore format
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
         };
+
+        public void UpdateNodeType(int fieldIndex, byte[] data, TypeCode type, bool asArray)
+        {
+            Fields[fieldIndex] = ReadNode(fieldIndex, data, type, asArray);
+        }
 
         public FlatBufferNode ReadNode(int fieldIndex, byte[] data, TypeCode type, bool asArray)
         {

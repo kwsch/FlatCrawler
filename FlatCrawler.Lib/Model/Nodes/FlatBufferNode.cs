@@ -1,7 +1,19 @@
-﻿using System.Xml.Linq;
+﻿using System;
 
 namespace FlatCrawler.Lib
 {
+    public sealed record FlatBufferNodeType
+    {
+        public TypeCode Type { get; init; } = TypeCode.Empty;
+        public bool IsArray { get; init; } = false;
+
+        public FlatBufferNodeType(TypeCode type, bool isArray)
+        {
+            Type = type;
+            IsArray = isArray;
+        }
+    }
+
     public abstract record FlatBufferNode
     {
         public readonly FlatBufferNode? Parent;
