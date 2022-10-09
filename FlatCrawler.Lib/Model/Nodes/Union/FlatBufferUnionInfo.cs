@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace FlatCrawler.Lib;
 
@@ -13,7 +13,11 @@ public sealed class FlatBufferUnionInfo
     {
         var type = parent.ReadUInt8(0, data).Value;
         var node = parent.ReadObject(1, data);
+        return ReadUnion(node, data, type);
+    }
 
+    public FlatBufferUnionNode ReadUnion(FlatBufferObject node, byte[] data, byte type)
+    {
         var info = UnionTypes[type];
         var inner = node.ReadNode(0, data, info.Type, info.IsArray);
         return new(info, node, inner);

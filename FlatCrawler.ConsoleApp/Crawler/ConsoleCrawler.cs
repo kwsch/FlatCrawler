@@ -322,9 +322,17 @@ public class ConsoleCrawler
 
     private static void AnalyzeUnion(byte[] data, IArrayNode array)
     {
-        var result = FlatBufferUnionNodeSummary.GetUnionAnalysis(array, data);
-        var unique = result.OrderBy(z => z.Key).ToArray();
-        Console.WriteLine($"Unique Types: {string.Join(" ", unique.Select(z => $"{z.Key}"))}");
-        Console.WriteLine($"Example Type Indexes:{Environment.NewLine}{string.Join(Environment.NewLine, unique.Select(z => $"{z.Value}"))}");
+        var result = array.AnalyzeUnion(data);
+        var unique = result.UniqueTypeCodes;
+        Console.WriteLine($"Unique Types: {string.Join(" ", unique.Select(x => x.ToString("X")))}");
+        foreach (var type in unique)
+        {
+            var fieldCount = result.MaxFieldCount(type);
+            var sameFieldCount = result.SameFieldCount(type);
+            var indexes = result.GetIndexes(type);
+            var quality = sameFieldCount ? "present in all" : fieldCount == 1 ? "optional" : "varied";
+
+            Console.WriteLine($"Type {type:X} has {fieldCount} fields ({quality}), at indexes: {string.Join(" ", indexes)}");
+        }
     }
 }
