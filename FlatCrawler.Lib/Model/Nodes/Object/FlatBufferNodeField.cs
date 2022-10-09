@@ -12,7 +12,7 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
     private FlatBufferNode?[] Fields { get; }
     public IReadOnlyList<FlatBufferNode?> AllFields => Fields;
 
-    public bool HasField(int fieldIndex) => fieldIndex < VTable.FieldInfo.Length && VTable.FieldInfo[fieldIndex].Offset != 0;
+    public bool HasField(int fieldIndex) => fieldIndex < VTable.FieldInfo.Length && VTable.FieldInfo[fieldIndex].HasValue;
     public int FieldCount => Fields.Length;
 
     protected FlatBufferNodeField(int offset, VTable vTable, int dataTableOffset, int vTableOffset, FlatBufferNode? parent = null) :
@@ -27,7 +27,7 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
     public int GetFieldOffset(int fieldIndex)
     {
         var fo = VTable.FieldInfo[fieldIndex];
-        if (fo.Offset == 0)
+        if (!fo.HasValue)
             throw new ArgumentException("Field not present in Table");
         return DataTableOffset + fo.Offset;
     }

@@ -1,17 +1,16 @@
 namespace FlatCrawler.Lib;
 
-public sealed class VTableFieldInfo
+/// <summary>
+/// Represents a field pointer within a <see cref="VTable"/>.
+/// </summary>
+/// <param name="Index">Field Index</param>
+/// <param name="Offset">Relative offset to where the field's serialized value is stored.</param>
+/// <param name="Size">How many bytes are needed to store the field's serialized value.</param>
+public sealed record VTableFieldInfo(int Index, int Offset, int Size)
 {
-    public readonly int Index;
-    public readonly int Offset;
-    public readonly int Size;
-
-    public VTableFieldInfo(int index, int offset, int size)
-    {
-        Index = index;
-        Offset = offset;
-        Size = size;
-    }
-
-    public override string ToString() => $"[{Offset:X4}] (Length: {Size})";
+    /// <summary>
+    /// The field has a value stored in the buffer if the offset is greater than 0.
+    /// Zero valued offsets are used to indicate that the field is not present.
+    /// </summary>
+    public bool HasValue => Offset != 0;
 }

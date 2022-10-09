@@ -26,7 +26,7 @@ public sealed class VTable
         FieldInfo = new VTableFieldInfo[fieldCount];
         ReadFieldInfo(data, offset + HeaderSize);
 
-        if (FieldInfo.Any(z => z.Offset >= DataTableLength))
+        if (FieldInfo.Any(z => z.HasValue && z.Offset >= DataTableLength))
             throw new IndexOutOfRangeException("Field offset is beyond the data table's length.");
     }
 
@@ -73,7 +73,7 @@ public sealed class VTable
 
     public string GetFieldOrder(int bias = 0)
     {
-        var tuples = FieldInfo.Where(z => z.Offset != 0).OrderBy(z => z.Offset);
+        var tuples = FieldInfo.Where(z => z.HasValue).OrderBy(z => z.Offset);
         return string.Join(" ", GetFieldPrint(tuples, bias));
     }
 
