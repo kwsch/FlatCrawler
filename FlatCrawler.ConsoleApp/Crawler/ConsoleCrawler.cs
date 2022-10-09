@@ -270,9 +270,15 @@ public class ConsoleCrawler
                     return CrawlResult.Silent;
 
                 #region Analysis
-                case "au" or "analyze" or "union" when node is IArrayNode a:
+                case "au" or "union" when node is IArrayNode a:
                     AnalyzeUnion(data, a);
                     return CrawlResult.Navigate;
+                case "af" or "analyze" when node is IArrayNode a:
+                    PrintFieldAnalysis(a.AnalyzeFields(data));
+                    return CrawlResult.Silent;
+                case "af" or "analyze" when node is FlatBufferNodeField f:
+                    PrintFieldAnalysis(f.AnalyzeFields(data));
+                    return CrawlResult.Silent;
 
                 case "oof" when node is FlatBufferNodeField fn:
                     Console.WriteLine(fn.VTable.GetFieldOrder());
@@ -318,6 +324,12 @@ public class ConsoleCrawler
             Console.ForegroundColor = ConsoleColor.White;
             return CrawlResult.Error;
         }
+    }
+
+    private static void PrintFieldAnalysis(FieldAnalysisResult result)
+    {
+        foreach (var (index, obs) in result.Fields.OrderBy(z => z.Key))
+            Console.WriteLine($"[{index}] {obs.Summary()}");
     }
 
     private static void AnalyzeUnion(byte[] data, IArrayNode array)
