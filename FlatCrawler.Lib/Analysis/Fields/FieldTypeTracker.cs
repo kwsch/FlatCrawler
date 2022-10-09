@@ -184,4 +184,90 @@ public record FieldTypeTracker
         }
         return sb.ToString();
     }
+
+    public string Summary(FlatBufferNodeField node, int index, byte[] data)
+    {
+        // For each bitflag that is set, print the type and the value by reading the node.
+        var sb = new StringBuilder();
+        if (Single != 0)
+        {
+            sb.Append("Type: ");
+            foreach (var (type, _) in Structs)
+            {
+                var mask = 1u << (int)type;
+                if ((Single & mask) != 0)
+                {
+                    try
+                    {
+                        var name = node.GetFieldValue(index, data, type);
+                        var value = name.TypeName;
+                        sb.Append(value).Append(' ');
+                    }
+                    catch { /* Ignore */ }
+                }
+            }
+            if ((Single & (1u << (int)TypeCode.Boolean)) != 0)
+            {
+                sb.Append(TypeCode.Boolean).Append(' ');
+                sb.Append(node.ReadBool(index, data).Value).Append(' ');
+            }
+            if ((Single & (1u << (int)TypeCode.Object)) != 0)
+            {
+                try
+                {
+                    var value = node.ReadObject(index, data).TypeName;
+                    sb.Append(TypeCode.Object).Append(' ');
+                    sb.Append(value).Append(' ');
+                }
+                catch { /* Ignore */ }
+            }
+            if ((Single & (1u << (int)TypeCode.String)) != 0)
+            {
+                try
+                {
+                    var value = node.ReadString(index, data).TypeName;
+                    sb.Append(TypeCode.String).Append(' ');
+                    sb.Append(value).Append(' ');
+                }
+                catch { /* Ignore */ }
+            }
+        }
+
+        if (Array != 0)
+        {
+            if (Single != 0)
+                sb.Append("    ");
+            sb.Append("ArrayType: ");
+            foreach (var (type, _) in Structs)
+            {
+                var mask = 1u << (int)type;
+                if ((Array & mask) != 0)
+                {
+                    sb.Append(type).Append('[');
+                    sb.Append(((IArrayNode)node.GetTableStruct(index, data, type)).Entries.Count).Append("] ");
+                }
+            }
+            if ((Array & (1u << (int)TypeCode.Object)) != 0)
+            {
+                try
+                {
+                    var length = node.ReadArrayObject(index, data).Entries.Length;
+                    sb.Append(TypeCode.Object);
+                    sb.Append('[').Append(length).Append("] ");
+                }
+                catch { /* Ignore */ }
+            }
+            if ((Array & (1u << (int)TypeCode.String)) != 0)
+            {
+                try
+                {
+                    var length = node.ReadArrayString(index, data).Entries.Length;
+                    sb.Append(TypeCode.String);
+                    sb.Append('[').Append(length).Append("] ");
+                }
+                catch { /* Ignore */ }
+            }
+        }
+        return sb.ToString();
+    }
 }

@@ -277,7 +277,7 @@ public class ConsoleCrawler
                     PrintFieldAnalysis(a.AnalyzeFields(data));
                     return CrawlResult.Silent;
                 case "af" or "analyze" when node is FlatBufferNodeField f:
-                    PrintFieldAnalysis(f.AnalyzeFields(data));
+                    PrintFieldAnalysis(f.AnalyzeFields(data), f, data);
                     return CrawlResult.Silent;
 
                 case "oof" when node is FlatBufferNodeField fn:
@@ -330,6 +330,12 @@ public class ConsoleCrawler
     {
         foreach (var (index, obs) in result.Fields.OrderBy(z => z.Key))
             Console.WriteLine($"[{index}] {obs.Summary()}");
+    }
+
+    private static void PrintFieldAnalysis(FieldAnalysisResult result, FlatBufferNodeField node, byte[] data)
+    {
+        foreach (var (index, obs) in result.Fields.OrderBy(z => z.Key))
+            Console.WriteLine($"[{index}] {obs.Summary(node, index, data)}");
     }
 
     private static void AnalyzeUnion(byte[] data, IArrayNode array)

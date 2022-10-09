@@ -25,7 +25,7 @@ public record FieldSizeTracker(int Min, int Max, bool IsUncertain)
 
     public FieldType GuessOverallType()
     {
-        if (Min == 4 && !IsUncertain)
+        if (IsPlausible(4))
             return FieldType.All;
         if (Min == 6 && Max == 6)
             return FieldType.StructInlined;

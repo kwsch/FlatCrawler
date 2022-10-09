@@ -14,8 +14,6 @@ public class FieldObservations
         Type.Observe(entry, index, data, Size);
     }
 
-    public string Summary()
-    {
-        return $"{{{Size.Summary()}}} {Type.Summary()}";
-    }
+    public string Summary() => $"{{{Size.Summary()}}} {Type.Summary()}";
+    public string Summary(FlatBufferNodeField node, int index, byte[] data) => $"{{{Size.Summary()}}} {Type.Summary(node, index, data)}";
 }
