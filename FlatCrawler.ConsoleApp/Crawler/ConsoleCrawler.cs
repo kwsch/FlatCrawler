@@ -274,7 +274,11 @@ public class ConsoleCrawler
                     AnalyzeUnion(data, a);
                     return CrawlResult.Navigate;
                 case "af" or "analyze" when node is IArrayNode a:
-                    PrintFieldAnalysis(a.AnalyzeFields(data));
+                    var r = a.AnalyzeFields(data);
+                    if (a.Entries[0] is FlatBufferNodeField first)
+                        PrintFieldAnalysis(r, first, data);
+                    else
+                        PrintFieldAnalysis(r);
                     return CrawlResult.Silent;
                 case "af" or "analyze" when node is FlatBufferNodeField f:
                     PrintFieldAnalysis(f.AnalyzeFields(data), f, data);
