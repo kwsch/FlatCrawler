@@ -126,9 +126,20 @@ public class FlatBufferPrinter
         if (parent is FlatBufferNodeField f && !f.HasField(index))
             return Default;
         var entry = x[index];
+        if (entry is null)
+            return GetUnexplored(parent, index);
         if (cmp is not null && ReferenceEquals(cmp, entry))
             return $"{cmp.FullNodeName} {LinkedNode}";
-        return entry?.FullNodeName ?? Unexplored;
+        return entry.FullNodeName;
+    }
+
+    private string GetUnexplored(FlatBufferNode parent, int index)
+    {
+        if (parent is not FlatBufferNodeField f)
+            return Unexplored;
+
+        var fi = f.VTable.FieldInfo[index];
+        return $"{Unexplored} [{fi.Size}]";
     }
 
     private static string GetDepthPadded(string name, int depth) => name.PadLeft(name.Length + (depth * 2), ' ');
