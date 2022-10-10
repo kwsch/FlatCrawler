@@ -3,6 +3,7 @@ using System.Linq;
 
 namespace FlatCrawler.Lib;
 
+// Object[] Ptr field type
 public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
 {
     public const int HeaderSize = 4;
@@ -39,7 +40,9 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
 
     private FlatBufferTableObject(int offset, int length, FlatBufferNode parent, int dataTableOffset) :
         base(offset, parent, length, dataTableOffset)
-    { }
+    {
+        FieldInfo = new FBFieldInfo { Type = new FBClass(), IsArray = true };
+    }
 
     private void ReadArray(byte[] data)
     {
@@ -53,7 +56,12 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         var dataTablePointerShift = BitConverter.ToInt32(data, arrayEntryPointerOffset);
         var dataTableOffset = arrayEntryPointerOffset + dataTablePointerShift;
 
-        return FlatBufferObject.Read(arrayEntryPointerOffset, this, data, dataTableOffset);
+        var entry = FlatBufferObject.Read(arrayEntryPointerOffset, this, data, dataTableOffset);
+
+        // Override entry type with table's class type
+        entry.SetClassType(ObjectClass);
+
+        return entry;
     }
 
     public static FlatBufferTableObject Read(int offset, FlatBufferNode parent, int fieldIndex, byte[] data)

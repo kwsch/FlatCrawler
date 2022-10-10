@@ -7,30 +7,18 @@ public sealed record FlatBufferObject : FlatBufferNodeField
 {
     public FBClass ObjectClass => (FBClass)FieldInfo.Type;
 
-    /*{
-        get => (FBClass)FieldInfo.Type;
-        private set
-        {
-            FieldInfo = value;
-            Fields = new FlatBufferNode[_ObjectClass.Members.Count];
-            _ObjectClass.MemberTypeChanged += OnMemberTypeChanged;
-            _ObjectClass.MemberCountChanged += OnMemberCountChanged;
-        }
-    }*/
-
     public override string TypeName { get; set; } = "Object";
 
     private FlatBufferObject(int offset, VTable vTable, int dataTableOffset, FlatBufferNode parent) :
         base(offset, vTable, dataTableOffset, parent)
     {
         FieldInfo = new FBFieldInfo { Type = new FBClass() };
-        ObjectClass.AssociateVTable(vTable);
+        RegisterObjectClass();
     }
 
     ~FlatBufferObject()
     {
-        ObjectClass.MemberTypeChanged -= OnMemberTypeChanged;
-        ObjectClass.MemberCountChanged -= OnMemberCountChanged;
+        UnRegisterObjectClass();
     }
 
     public override void TrackChildFieldNode(int fieldIndex, TypeCode code, bool asArray, FlatBufferNode node)
@@ -38,8 +26,41 @@ public sealed record FlatBufferObject : FlatBufferNodeField
         ObjectClass.SetMemberType(fieldIndex, code, asArray);
         Fields[fieldIndex] = node;
 
-        // Override local field info with tracked member info
+        // Override child's field info with tracked member info
         node.FieldInfo = ObjectClass.Members[fieldIndex];
+    }
+
+    /// <summary>
+    /// Override the local class with a shared class type
+    /// </summary>
+    /// <param name="classType">The shared class</param>
+    public void SetClassType(FBClass classType)
+    {
+        UnRegisterObjectClass();
+        FieldInfo = FieldInfo with { Type = classType };
+        RegisterObjectClass();
+    }
+
+    /// <summary>
+    /// Update all data based on the ObjectClass
+    /// </summary>
+    private void RegisterObjectClass()
+    {
+        ObjectClass.AssociateVTable(VTable);
+
+        Fields = new FlatBufferNode[ObjectClass.Members.Count];
+
+        ObjectClass.MemberTypeChanged += OnMemberTypeChanged;
+        ObjectClass.MemberCountChanged += OnMemberCountChanged;
+    }
+
+    /// <summary>
+    /// Remove event associations
+    /// </summary>
+    private void UnRegisterObjectClass()
+    {
+        ObjectClass.MemberTypeChanged -= OnMemberTypeChanged;
+        ObjectClass.MemberCountChanged -= OnMemberCountChanged;
     }
 
     private void OnMemberCountChanged(object? sender, int e)
