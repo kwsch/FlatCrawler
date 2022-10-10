@@ -11,7 +11,7 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
     private string _name = "???";
     private string _typeName = "Object[]";
 
-    private FlatBufferTableClass ObjectClass { get; set; } = null!; // will always be set by static initializer
+    public FBClass ObjectClass => (FBClass)FieldInfo.Type;
 
     public override string TypeName
     {
@@ -41,8 +41,6 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         base(offset, parent, length, dataTableOffset)
     { }
 
-    private int GetEntryFieldCountMax() => Entries.Max(x => x.VTable.FieldInfo.Length);
-
     private void ReadArray(byte[] data)
     {
         for (int i = 0; i < Entries.Length; i++)
@@ -66,7 +64,7 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
 
         // If this table is part of another table, link the ObjectTypes (class) reference
         // If not, then just set up placeholder data.
-        if (parent.Parent is not FlatBufferTableObject t)
+        /*if (parent.Parent is not FlatBufferTableObject t)
         {
             int memberCount = node.GetEntryFieldCountMax();
             node.ObjectClass = new FlatBufferTableClass(memberCount);
@@ -81,26 +79,10 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
             node.ObjectClass = t.ObjectClass.RegisterSubClass(fieldIndex, memberCount);
         }
 
-        node.ObjectClass.MemberTypeChanged += node.ObjectClass_MemberTypeChanged;
+        node.ObjectClass.MemberTypeChanged += node.ObjectClass_MemberTypeChanged;*/
 
         return node;
     }
 
     public static FlatBufferTableObject Read(FlatBufferNodeField parent, int fieldIndex, byte[] data) => Read(parent.GetReferenceOffset(fieldIndex, data), parent, fieldIndex, data);
-
-    private void ObjectClass_MemberTypeChanged(object? sender, MemberTypeChangedArgs e)
-    {
-        System.Diagnostics.Debug.WriteLine($"Changing Member Type: {e.MemberIndex} {e.OldType} -> {e.NewType}");
-        foreach (var entry in Entries)
-        {
-            if (entry.HasField(e.MemberIndex))
-                entry.UpdateNodeType(e.MemberIndex, CommandUtil.Data.ToArray(), e.NewType.Type, e.NewType.IsArray);
-        }
-    }
-
-    public void OnFieldTypeChanged(int fieldIndex, TypeCode code, bool asArray, FlatBufferNode source)
-    {
-        System.Diagnostics.Debug.WriteLine($"Changing Field Type: {fieldIndex} {source.TypeName} -> {code} {asArray}");
-        ObjectClass.SetMemberType(fieldIndex, code, asArray);
-    }
 }
