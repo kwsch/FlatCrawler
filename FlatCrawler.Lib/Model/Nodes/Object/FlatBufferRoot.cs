@@ -13,8 +13,8 @@ public sealed record FlatBufferRoot : FlatBufferNodeField
     public int MagicLength { get; }
     public override string TypeName { get => "Root"; set { } }
 
-    private FlatBufferRoot(VTable vTable, string magic, int dataTableOffset, int vTableOffset) :
-        base(0, vTable, dataTableOffset, vTableOffset)
+    private FlatBufferRoot(VTable vTable, string magic, int dataTableOffset) :
+        base(0, vTable, dataTableOffset)
     {
         Magic = magic;
         MagicLength = dataTableOffset == HeaderSize ? 0 : magic.Length;
@@ -28,7 +28,7 @@ public sealed record FlatBufferRoot : FlatBufferNodeField
         // Read VTable
         var vTableOffset = GetVtableOffset(dataTableOffset, data, true);
         var vTable = ReadVTable(vTableOffset, data);
-        return new FlatBufferRoot(vTable, magic, dataTableOffset, vTableOffset);
+        return new FlatBufferRoot(vTable, magic, dataTableOffset);
     }
 
     private static string ReadMagic(int offset, byte[] data)

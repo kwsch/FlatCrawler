@@ -6,7 +6,7 @@ namespace FlatCrawler.Lib;
 
 public sealed class VTable
 {
-    private readonly int Location;
+    public readonly int Location;
     public readonly short VTableLength;
     public readonly short DataTableLength;
     public readonly VTableFieldInfo[] FieldInfo;

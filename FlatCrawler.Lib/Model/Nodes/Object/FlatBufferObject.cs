@@ -6,8 +6,8 @@ public sealed record FlatBufferObject : FlatBufferNodeField
 {
     public override string TypeName { get; set; } = "Object";
 
-    private FlatBufferObject(int offset, VTable vTable, int dataTableOffset, int vTableOffset, FlatBufferNode parent) :
-        base(offset, vTable, dataTableOffset, vTableOffset, parent)
+    private FlatBufferObject(int offset, VTable vTable, int dataTableOffset, FlatBufferNode parent) :
+        base(offset, vTable, dataTableOffset, parent)
     {
         TypeName = $"Object [{vTable.FieldInfo.Length}]";
     }
@@ -27,7 +27,7 @@ public sealed record FlatBufferObject : FlatBufferNodeField
         // Ensure VTable is correct
         if (vTableOffset < tableOffset && (vTableOffset + vTable.VTableLength) > tableOffset)
             throw new IndexOutOfRangeException("VTable overflows into Data Table. Not a valid VTable.");
-        return new FlatBufferObject(offset, vTable, tableOffset, vTableOffset, parent);
+        return new FlatBufferObject(offset, vTable, tableOffset, parent);
     }
 
     public static FlatBufferObject Read(FlatBufferNodeField parent, int fieldIndex, byte[] data)
