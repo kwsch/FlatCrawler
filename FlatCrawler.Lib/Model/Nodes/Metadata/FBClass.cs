@@ -15,7 +15,7 @@ public sealed record FBClass : FBType
 
     public IReadOnlyList<FBFieldInfo> Members => _members;
 
-    private SortedDictionary<int, VTable> AssociatedVTables = new();
+    private readonly SortedDictionary<int, VTable> AssociatedVTables = new();
 
     public FBClass() :
         base(TypeCode.Object)
@@ -48,6 +48,8 @@ public sealed record FBClass : FBType
             member = (member with { Type = new FBClass(), IsArray = asArray });
         else
             member = (member with { Type = new FBType(type), IsArray = asArray });
+
+        _members[memberIndex] = member;
 
         OnMemberTypeChanged(new(memberIndex, member, oldType, member.Type));
     }

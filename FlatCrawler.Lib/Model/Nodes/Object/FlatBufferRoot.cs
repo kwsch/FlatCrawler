@@ -11,6 +11,7 @@ public sealed record FlatBufferRoot : FlatBufferNodeField
 
     public string Magic { get; }
     public int MagicLength { get; }
+    public int Size => HeaderSize + MagicLength;
     public override string TypeName { get => "Root"; set { } }
 
     private FlatBufferRoot(VTable vTable, string magic, int dataTableOffset) :

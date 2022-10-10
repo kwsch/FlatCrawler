@@ -12,6 +12,8 @@ public sealed record FlatBufferStringValue : FlatBufferNode
     public string Value { get; }
 
     public const int HeaderSize = sizeof(int);
+    public const int NullTerminatorSize = sizeof(char);
+
     private FlatBufferStringValue(int definedOffset, int stringLengthOffset, int stringOffset, int stringLength, string str, FlatBufferNode parent) :
         base(definedOffset, parent)
     {

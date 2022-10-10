@@ -142,5 +142,5 @@ public class FlatBufferPrinter
         return $"{Unexplored} [{fi.Size}]";
     }
 
-    private static string GetDepthPadded(string name, int depth) => name.PadLeft(name.Length + (depth * 2), ' ');
+    public static string GetDepthPadded(string str, int depth) => str.PadLeft(str.Length + (depth * 2), ' ');
 }

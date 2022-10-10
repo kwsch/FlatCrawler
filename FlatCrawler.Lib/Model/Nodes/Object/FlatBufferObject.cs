@@ -7,8 +7,6 @@ public sealed record FlatBufferObject : FlatBufferNodeField
 {
     public FBClass ObjectClass => (FBClass)FieldInfo.Type;
 
-    public override string TypeName { get => ObjectClass.TypeName; set => ObjectClass.TypeName = value; }
-
     private FlatBufferObject(int offset, VTable vTable, int dataTableOffset, FlatBufferNode parent) :
         base(offset, vTable, dataTableOffset, parent)
     {
