@@ -23,24 +23,15 @@ public record FieldSizeTracker(int Min, int Max, bool IsUncertain)
         IsUncertain &= isUncertain;
     }
 
-    public FieldType GuessOverallType()
+    public FieldType GuessOverallType() => (Min, Max) switch
     {
-        if (IsPlausible(4))
-            return FieldType.All;
-        if (Min == 6 && Max == 6)
-            return FieldType.StructInlined;
-
-        if (Max == 1)
-            return FieldType.StructSingle;
-        if (Max < 4)
-            return FieldType.StructValue;
-        if (Min > 8)
-            return FieldType.StructInlined;
-        if (Min > 4)
-            return FieldType.StructValue;
-
-        return FieldType.StructValue;
-    }
+        (<=4, >=4) => FieldType.All,
+        (6, 6) => FieldType.StructInlined,
+        (_, 1) => FieldType.StructSingle,
+        (_, <4) => FieldType.StructValue,
+        (>8, _) => FieldType.StructInlined,
+        (>4, _) => FieldType.StructValue,
+    };
 
     public bool IsPlausible(int size) => size >= Min && size <= Max;
 
