@@ -8,17 +8,18 @@ using FlatCrawler.Lib;
 
 namespace FlatCrawler.ConsoleApp;
 
-public class ConsoleCrawler
+public sealed class ConsoleCrawler
 {
     private readonly List<string> ProcessedCommands = new();
     private const string SaveStatePath = "lines.txt";
 
     private readonly string FilePath;
+    private readonly byte[] Data;
 
     public ConsoleCrawler(string path, byte[] data)
     {
         FilePath = path;
-        CommandUtil.Data = data;
+        Data = data;
     }
 
     public void CrawlLoop()
@@ -27,8 +28,7 @@ public class ConsoleCrawler
         Console.WriteLine($"Crawling {Console.Title = fn}...");
         Console.WriteLine();
 
-        var data = CommandUtil.Data;
-        FlatBufferNode node = FlatBufferRoot.Read(0, data);
+        FlatBufferNode node = FlatBufferRoot.Read(0, Data);
         node.PrintTree();
 
         Console.OutputEncoding = Encoding.UTF8; // japanese strings will show up as boxes rather than ????
@@ -38,7 +38,7 @@ public class ConsoleCrawler
             var cmd = Console.ReadLine();
             if (cmd is null)
                 break;
-            var result = ProcessCommand(cmd, ref node, data);
+            var result = ProcessCommand(cmd, ref node, Data);
             if (result == CrawlResult.Quit)
                 break;
 
@@ -336,13 +336,13 @@ public class ConsoleCrawler
             Console.WriteLine($"[{index}] {obs.Summary()}");
     }
 
-    private static void PrintFieldAnalysis(FieldAnalysisResult result, FlatBufferNodeField node, byte[] data)
+    private static void PrintFieldAnalysis(FieldAnalysisResult result, FlatBufferNodeField node, ReadOnlySpan<byte> data)
     {
         foreach (var (index, obs) in result.Fields.OrderBy(z => z.Key))
             Console.WriteLine($"[{index}] {obs.Summary(node, index, data)}");
     }
 
-    private static void AnalyzeUnion(byte[] data, IArrayNode array)
+    private static void AnalyzeUnion(ReadOnlySpan<byte> data, IArrayNode array)
     {
         var result = array.AnalyzeUnion(data);
         var unique = result.UniqueTypeCodes;

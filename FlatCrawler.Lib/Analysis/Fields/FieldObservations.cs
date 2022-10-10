@@ -2,7 +2,7 @@ using System;
 
 namespace FlatCrawler.Lib;
 
-public class FieldObservations
+public sealed class FieldObservations
 {
     public FieldSizeTracker Size { get; }
     public FieldTypeTracker Type { get; } = new();

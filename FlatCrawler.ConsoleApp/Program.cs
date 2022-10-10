@@ -47,6 +47,7 @@ internal static class Program
         }
         var data = File.ReadAllBytes(path);
         var crawler = new ConsoleCrawler(path, data);
+        Lib.CommandUtil.Data = data;
         crawler.CrawlLoop();
     }
 }

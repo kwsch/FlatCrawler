@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace FlatCrawler.Lib;
 
-public class FlatBufferPrinter
+public sealed class FlatBufferPrinter
 {
     private readonly List<string> Output = new();
 
