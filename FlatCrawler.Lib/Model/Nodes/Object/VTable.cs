@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -35,26 +36,32 @@ public sealed class VTable
         int fieldCount = FieldInfo.Length;
 
         // Store index and offset
-        (int Index, int Offset)[] fields = new (int, int)[fieldCount];
+        short[] offsets = new short[fieldCount];
         for (int i = 0; i < fieldCount; i++)
         {
             var ofs = BitConverter.ToInt16(data, offset + (i * SizeOfField));
-            fields[i] = new(i, ofs);
+            offsets[i] = ofs;
+            FieldInfo[i] = new(i, ofs, 0);
         }
-
-        var sortedFields = fields.OrderBy(z => z.Offset).ToArray();
 
         // Loop in reverse order, starting at the table size
         // Field size would be Start byte - End byte.
         // Eg. 12 (table length) - 8 (offset) = size of 4 bytes
         // Next field would end at 8
 
+        // Store index and offset in reverse order
+        var sortedFields = offsets
+            .Select((Offset, Index) => new { Offset, Index })
+            .Where(x => x.Offset != 0) // Zero offsets don't exist in the table so have no size
+            .OrderByDescending(z => z.Offset)
+            .ToArray();
+
         int end = DataTableLength;
-        for (int i = fieldCount - 1; i >= 0; --i)
+        foreach (var f in sortedFields)
         {
-            var index = sortedFields[i].Index;
-            var start = sortedFields[i].Offset;
-            FieldInfo[index] = new(index, start, end - start);
+            var i = f.Index;
+            var start = f.Offset;
+            FieldInfo[i] = new(i, start, end - start);
             end = start;
         }
     }

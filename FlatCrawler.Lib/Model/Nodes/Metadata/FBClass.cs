@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 
 namespace FlatCrawler.Lib;
@@ -14,6 +15,8 @@ public sealed record FBClass : FBType
 
     public IReadOnlyList<FBFieldInfo> Members => _members;
 
+    private SortedDictionary<int, VTable> AssociatedVTables = new();
+
     public FBClass() :
         base(TypeCode.Object)
     { }
@@ -25,7 +28,7 @@ public sealed record FBClass : FBType
 
         var index = _members
             .Select((Field, Index) => new { Field, Index })
-            .SingleOrDefault(x => x.Field.OffsetInVTable == offset)
+            .SingleOrDefault(x => x.Field.Offset == offset)
             ?.Index ?? -1;
 
         if (index == -1)
@@ -52,33 +55,76 @@ public sealed record FBClass : FBType
 
     public void AssociateVTable(VTable vtable)
     {
+        if (AssociatedVTables.ContainsKey(vtable.Location))
+            return;
+
+        AssociatedVTables.Add(vtable.Location, vtable);
+
+        // Append members until count matches vtable field count
+        if (_members.Length < vtable.FieldInfo.Length)
+        {
+            var updatedMembers = _members.AsEnumerable();
+            for (int i = _members.Length; i < vtable.FieldInfo.Length; ++i)
+            {
+                var field = vtable.FieldInfo[i];
+                var newInfo = new FBFieldInfo { Offset = field.Offset, Size = field.Size };
+                updatedMembers = updatedMembers.Append(newInfo);
+            }
+            _members = updatedMembers.ToArray();
+
+            OnMemberCountChanged();
+        }
+
         UpdateOffsets(vtable);
         UpdateSizes(vtable);
     }
 
     private void UpdateOffsets(VTable vtable)
     {
-        // Find the offsets that are not part of the _members list and add them
-        var vTableOffsets = vtable.FieldInfo.Select(x => x.Offset).Where(x => x != 0);
-        var trackedOffsets = _members.Select(x => x.OffsetInVTable);
-
-        var untrackedOffsets = vTableOffsets.Except(trackedOffsets);
-
-        if (untrackedOffsets.Any())
+        // Overwrite any zero offsets
+        for (int i = 0; i < vtable.FieldInfo.Length; ++i)
         {
-            // Try to preserve field references 
-            var updatedMembers = _members.AsEnumerable();
-            foreach (var offset in untrackedOffsets)
-                updatedMembers = updatedMembers.Append(new FBFieldInfo { OffsetInVTable = offset });
+            var member = _members[i];
+            if (member.Offset != 0)
+                continue;
 
-            _members = updatedMembers.OrderBy(x => x.OffsetInVTable).ToArray();
-
-            OnMemberCountChanged();
+            _members[i] = member with { Offset = vtable.FieldInfo[i].Offset };
         }
     }
 
     private void UpdateSizes(VTable vtable)
     {
+        // Update type size
+        Size = Math.Max(Size, vtable.DataTableLength);
+
+        // Code below is mainly there for verification of VTable sizes
+
+        // Loop in reverse order, starting at the table size
+        // Field size would be Start byte - End byte.
+        // Eg. 12 (table length) - 8 (offset) = size of 4 bytes
+        // Next field would end at 8
+
+        // Store index and offset in reverse order
+        var sortedFields = _members
+            .Select((x, Index) => new { x.Offset, Index })
+            .Where(x => x.Offset != 0) // Zero offsets don't exist in the table so have no size
+            .OrderByDescending(z => z.Offset)
+            .ToArray();
+
+        int end = Size;
+        foreach (var f in sortedFields)
+        {
+            var i = f.Index;
+            var start = f.Offset;
+
+            if (_members[i].Size != end - start)
+            {
+                Debug.WriteLine("Found a size that was incorrectly calculated in the VTable. Should probably update it there too.");
+            }
+
+            _members[i] = _members[i] with { Size = end - start };
+            end = start;
+        }
     }
 
     private void OnMemberTypeChanged(MemberTypeChangedArgs args)
