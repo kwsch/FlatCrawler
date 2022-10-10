@@ -9,28 +9,20 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
     public const int HeaderSize = 4;
     public const int EntrySize = 4;
 
-    private string _name = "???";
-    private string _typeName = "Object[]";
-
     public FBClass ObjectClass => (FBClass)FieldInfo.Type;
 
     public override string TypeName
     {
-        get => _typeName;
-        set
-        {
-            _typeName = $"{value}[]";
-            foreach (var e in Entries)
-                e.TypeName = value;
-        }
+        get => $"{ObjectClass.TypeName}[{Entries.Length}]";
+        set => ObjectClass.TypeName = value;
     }
 
     public override string Name
     {
-        get => _name;
+        get => FieldInfo.Name;
         set
         {
-            _name = value;
+            FieldInfo.Name = value;
             for (int i = 0; i < Entries.Length; ++i)
                 Entries[i].Name = $"{value}[{i}]";
         }
