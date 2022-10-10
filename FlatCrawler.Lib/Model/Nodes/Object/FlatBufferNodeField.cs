@@ -9,7 +9,7 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
     public int DataTableOffset { get; }
     public int VTableOffset => VTable.Location;
 
-    private FlatBufferNode?[] Fields { get; }
+    protected FlatBufferNode?[] Fields { get; set; }
     public IReadOnlyList<FlatBufferNode?> AllFields => Fields;
 
     public bool HasField(int fieldIndex) => fieldIndex < VTable.FieldInfo.Length && VTable.FieldInfo[fieldIndex].HasValue;
@@ -53,14 +53,8 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
 
     protected static VTable ReadVTable(int offset, byte[] data) => new(data, offset);
 
-    public void TrackChildFieldNode(int fieldIndex, TypeCode code, bool asArray, FlatBufferNode node)
+    public virtual void TrackChildFieldNode(int fieldIndex, TypeCode code, bool asArray, FlatBufferNode node)
     {
-        // Table objects have the same data types for each entry
-        if (Parent is FlatBufferTableObject t)
-        {
-            t.OnFieldTypeChanged(fieldIndex, code, asArray, this);
-        }
-
         Fields[fieldIndex] = node;
     }
 

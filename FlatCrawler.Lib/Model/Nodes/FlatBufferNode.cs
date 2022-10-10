@@ -3,8 +3,9 @@ namespace FlatCrawler.Lib;
 public abstract record FlatBufferNode(int Offset, FlatBufferNode? Parent = null)
 {
     public readonly FlatBufferNode? Parent = Parent;
-    public readonly int Offset = Offset;
+    public FBFieldInfo FieldInfo = new();
 
+    public readonly int Offset = Offset;
     public virtual string Name { get; set; } = "???";
     public abstract string TypeName { get; set; }
 

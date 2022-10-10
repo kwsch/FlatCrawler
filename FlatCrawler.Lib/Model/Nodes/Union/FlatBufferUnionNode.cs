@@ -1,15 +1,14 @@
-﻿namespace FlatCrawler.Lib;
+namespace FlatCrawler.Lib;
 
 public sealed record FlatBufferUnionNode : FlatBufferNode
 {
-    public FlatBufferNodeType Type { get; }
     public FlatBufferNode Inner { get; }
 
-    public FlatBufferUnionNode(FlatBufferNodeType Type, FlatBufferObject Parent, FlatBufferNode Inner) : base(Parent)
+    public FlatBufferUnionNode(FBFieldInfo info, FlatBufferObject Parent, FlatBufferNode Inner) : base(Parent)
     {
-        this.Type = Type;
+        FieldInfo = info;
         this.Inner = Inner;
     }
 
-    public override string TypeName { get => $"{Type} {Inner.TypeName}"; set { } }
+    public override string TypeName { get => $"{FieldInfo.Type} {Inner.TypeName}"; set { } }
 }

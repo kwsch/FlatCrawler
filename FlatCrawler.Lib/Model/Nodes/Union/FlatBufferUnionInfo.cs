@@ -1,13 +1,14 @@
+using System;
 using System.Collections.Generic;
 
 namespace FlatCrawler.Lib;
 
 public sealed class FlatBufferUnionInfo
 {
-    public Dictionary<byte, FlatBufferNodeType> UnionTypes { get; }
+    public Dictionary<byte, FBType> UnionTypes { get; }
 
     public FlatBufferUnionInfo() : this(new()) { }
-    public FlatBufferUnionInfo(Dictionary<byte, FlatBufferNodeType> info) => UnionTypes = info;
+    public FlatBufferUnionInfo(Dictionary<byte, FBType> info) => UnionTypes = info;
 
     public FlatBufferUnionNode ReadUnion(FlatBufferNodeField parent, byte[] data)
     {
@@ -19,7 +20,8 @@ public sealed class FlatBufferUnionInfo
     public FlatBufferUnionNode ReadUnion(FlatBufferObject node, byte[] data, byte type)
     {
         var info = UnionTypes[type];
-        var inner = node.ReadNode(0, data, info.Type, info.IsArray);
-        return new(info, node, inner);
+        var inner = node.ReadNode(0, data, info.Type, node.FieldInfo.IsArray);
+        var unionFieldInfo = node.FieldInfo with { Type = info };
+        return new(unionFieldInfo, node, inner);
     }
 }
