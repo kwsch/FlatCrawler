@@ -51,7 +51,7 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         var entry = FlatBufferObject.Read(arrayEntryPointerOffset, this, data, dataTableOffset);
 
         // Override entry type with table's class type
-        entry.SetClassType(ObjectClass);
+        entry.TrackType(ObjectClass);
 
         return entry;
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace FlatCrawler.Lib;
 
@@ -22,17 +23,19 @@ public sealed record FlatBufferObject : FlatBufferNodeField
     public override void TrackChildFieldNode(int fieldIndex, TypeCode code, bool asArray, FlatBufferNode node)
     {
         ObjectClass.SetMemberType(fieldIndex, code, asArray);
-        Fields[fieldIndex] = node;
 
-        // Override child's field info with tracked member info
-        node.FieldInfo = ObjectClass.Members[fieldIndex];
+        Fields[fieldIndex] = node;
+        node.TrackFieldInfo(ObjectClass.Members[fieldIndex]);
     }
 
-    /// <summary>
-    /// Override the local class with a shared class type
-    /// </summary>
-    /// <param name="classType">The shared class</param>
-    public void SetClassType(FBClass classType)
+    public override void TrackFieldInfo(FBFieldInfo sharedInfo)
+    {
+        UnRegisterObjectClass();
+        FieldInfo = sharedInfo;
+        RegisterObjectClass();
+    }
+
+    public override void TrackType(FBType classType)
     {
         UnRegisterObjectClass();
         FieldInfo = FieldInfo with { Type = classType };
@@ -70,7 +73,11 @@ public sealed record FlatBufferObject : FlatBufferNodeField
     {
         Debug.WriteLine($"Changing Member Type: {e.MemberIndex} {e.OldType} -> {e.NewType}");
         if (HasField(e.MemberIndex))
-            UpdateNodeType(e.MemberIndex, CommandUtil.Data.ToArray(), e.NewType.Type, e.FieldInfo.IsArray);
+        {
+            var node = ReadNode(e.MemberIndex, CommandUtil.Data.ToArray(), e.NewType.Type, e.FieldInfo.IsArray);
+            Fields[e.MemberIndex] = node;
+            node.TrackFieldInfo(e.FieldInfo);
+        }
     }
 
     public static FlatBufferObject Read(int offset, FlatBufferNode parent, byte[] data)

@@ -106,11 +106,6 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
         _ => throw new ArgumentOutOfRangeException(nameof(type)),
     };
 
-    public void UpdateNodeType(int fieldIndex, byte[] data, TypeCode type, bool asArray)
-    {
-        Fields[fieldIndex] = ReadNode(fieldIndex, data, type, asArray);
-    }
-
     public FlatBufferNode ReadNode(int fieldIndex, byte[] data, TypeCode type, bool asArray)
     {
         if (asArray)
