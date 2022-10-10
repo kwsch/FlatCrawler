@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace FlatCrawler.Lib;
@@ -9,14 +10,14 @@ public sealed class FlatBufferUnionInfo
     public FlatBufferUnionInfo() : this(new()) { }
     public FlatBufferUnionInfo(Dictionary<byte, FBType> info) => UnionTypes = info;
 
-    public FlatBufferUnionNode ReadUnion(FlatBufferNodeField parent, byte[] data)
+    public FlatBufferUnionNode ReadUnion(FlatBufferNodeField parent, ReadOnlySpan<byte> data)
     {
         var type = parent.ReadUInt8(0, data).Value;
         var node = parent.ReadObject(1, data);
         return ReadUnion(node, data, type);
     }
 
-    public FlatBufferUnionNode ReadUnion(FlatBufferObject node, byte[] data, byte type)
+    public FlatBufferUnionNode ReadUnion(FlatBufferObject node, ReadOnlySpan<byte> data, byte type)
     {
         var info = UnionTypes[type];
         var inner = node.ReadNode(0, data, info.Type, node.FieldInfo.IsArray);

@@ -27,7 +27,8 @@ public class ConsoleCrawler
         Console.WriteLine($"Crawling {Console.Title = fn}...");
         Console.WriteLine();
 
-        FlatBufferNode node = FlatBufferRoot.Read(0, CommandUtil.Data.ToArray());
+        var data = CommandUtil.Data;
+        FlatBufferNode node = FlatBufferRoot.Read(0, data);
         node.PrintTree();
 
         Console.OutputEncoding = Encoding.UTF8; // japanese strings will show up as boxes rather than ????
@@ -37,7 +38,7 @@ public class ConsoleCrawler
             var cmd = Console.ReadLine();
             if (cmd is null)
                 break;
-            var result = ProcessCommand(cmd, ref node, CommandUtil.Data.ToArray());
+            var result = ProcessCommand(cmd, ref node, data);
             if (result == CrawlResult.Quit)
                 break;
 
@@ -54,14 +55,14 @@ public class ConsoleCrawler
         }
     }
 
-    private FlatBufferNode? GetNodeAtIndex(FlatBufferNode parent, string index)
+    private static FlatBufferNode? GetNodeAtIndex(FlatBufferNode parent, string index)
     {
         if (parent is IFieldNode fn)
         {
             var fieldIndex = CommandUtil.GetIntPossibleHex(index);
             return fn.GetField(fieldIndex) ?? throw new ArgumentNullException(nameof(FlatBufferNode), "node not explored yet.");
         }
-        else if (parent is IArrayNode an)
+        if (parent is IArrayNode an)
         {
             return an.GetEntry(int.Parse(index));
         }

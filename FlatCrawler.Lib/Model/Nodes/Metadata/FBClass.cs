@@ -19,15 +19,14 @@ public sealed record FBClass() : FBType(TypeCode.Object)
     public int GetMemberIndex(int offset)
     {
         if (offset == 0)
-            throw new ArgumentOutOfRangeException(nameof(offset), "Value of 0 for offset is not valid (Default Value)");
+            throw new ArgumentOutOfRangeException(nameof(offset), offset, "Value of 0 for offset is not valid (Default Value)");
 
-        var index = _members
-            .Select((Field, Index) => new { Field, Index })
-            .SingleOrDefault(x => x.Field.Offset == offset)
-            ?.Index ?? -1;
-
+        var index = Array.FindIndex(_members, z => z.Offset == offset);
         if (index == -1)
-            throw new ArgumentOutOfRangeException(nameof(offset), "Unable to find the member index with that offset.");
+            throw new ArgumentOutOfRangeException(nameof(offset), offset, "Unable to find the member index with that offset.");
+        var last = Array.FindLastIndex(_members, z => z.Offset == offset);
+        if (last != index)
+            throw new ArgumentOutOfRangeException(nameof(offset), offset, $"More than one member has that offset: {index}, {last}");
 
         return index;
     }
@@ -57,16 +56,17 @@ public sealed record FBClass() : FBType(TypeCode.Object)
         AssociatedVTables.Add(vtable.Location, vtable);
 
         // Append members until count matches vtable field count
-        if (_members.Length < vtable.FieldInfo.Length)
+        var info = vtable.FieldInfo;
+        if (_members.Length < info.Length)
         {
-            var updatedMembers = _members.AsEnumerable();
-            for (int i = _members.Length; i < vtable.FieldInfo.Length; ++i)
+            var newMembers = new FBFieldInfo[info.Length];
+            _members.CopyTo(newMembers, 0);
+            for (int i = _members.Length; i < info.Length; ++i)
             {
-                var field = vtable.FieldInfo[i];
-                var newInfo = new FBFieldInfo { Offset = field.Offset, Size = field.Size };
-                updatedMembers = updatedMembers.Append(newInfo);
+                var field = info[i];
+                newMembers[i] = new FBFieldInfo { Offset = field.Offset, Size = field.Size };
             }
-            _members = updatedMembers.ToArray();
+            _members = newMembers;
 
             OnMemberCountChanged();
         }
@@ -78,13 +78,14 @@ public sealed record FBClass() : FBType(TypeCode.Object)
     private void UpdateOffsets(VTable vtable)
     {
         // Overwrite any zero offsets
-        for (int i = 0; i < vtable.FieldInfo.Length; ++i)
+        var fi = vtable.FieldInfo;
+        for (int i = 0; i < fi.Length; ++i)
         {
             var member = _members[i];
             if (member.Offset != 0)
                 continue;
 
-            _members[i] = member with { Offset = vtable.FieldInfo[i].Offset };
+            _members[i] = member with { Offset = fi[i].Offset };
         }
     }
 

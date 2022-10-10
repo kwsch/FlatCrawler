@@ -13,7 +13,7 @@ public record FieldTypeTracker
 
     public void PreCheck(FieldSizeTracker size) => Type = size.GuessOverallType();
 
-    public void Observe(FlatBufferNodeField entry, int index, byte[] data, FieldSizeTracker sizes)
+    public void Observe(FlatBufferNodeField entry, int index, ReadOnlySpan<byte> data, FieldSizeTracker sizes)
     {
         if (FirstPass)
             ObserveFirst(entry, index, data, sizes);
@@ -21,7 +21,7 @@ public record FieldTypeTracker
             ObserveSubsequent(entry, index, data);
     }
 
-    private void ObserveFirst(FlatBufferNodeField entry, int index, byte[] data, FieldSizeTracker sizes)
+    private void ObserveFirst(FlatBufferNodeField entry, int index, ReadOnlySpan<byte> data, FieldSizeTracker sizes)
     {
         FirstPass = false;
         if (Type.HasFlagFast(FieldType.StructSingle))
@@ -58,7 +58,7 @@ public record FieldTypeTracker
         }
     }
 
-    private void ObserveSubsequent(FlatBufferNodeField entry, int index, byte[] data)
+    private void ObserveSubsequent(FlatBufferNodeField entry, int index, ReadOnlySpan<byte> data)
     {
         foreach (var (type, _) in Structs)
         {
@@ -98,7 +98,7 @@ public record FieldTypeTracker
         }
     }
 
-    private static uint TryReadTable(FlatBufferNodeField entry, int index, byte[] data, TypeCode type)
+    private static uint TryReadTable(FlatBufferNodeField entry, int index, ReadOnlySpan<byte> data, TypeCode type)
     {
         try
         {
@@ -111,7 +111,7 @@ public record FieldTypeTracker
         }
     }
 
-    private static uint TryReadBoolean(FlatBufferNodeField entry, int index, byte[] data)
+    private static uint TryReadBoolean(FlatBufferNodeField entry, int index, ReadOnlySpan<byte> data)
     {
         try
         {
@@ -119,11 +119,11 @@ public record FieldTypeTracker
             if (child.Value is 0 or 1)
                 return 1u << (int)TypeCode.Boolean;
         }
-        catch { }
+        catch { /* Ignore */ }
         return 0;
     }
 
-    private static uint TryRead(FlatBufferNodeField entry, int index, byte[] data, TypeCode type)
+    private static uint TryRead(FlatBufferNodeField entry, int index, ReadOnlySpan<byte> data, TypeCode type)
     {
         try
         {
@@ -185,7 +185,7 @@ public record FieldTypeTracker
         return sb.ToString();
     }
 
-    public string Summary(FlatBufferNodeField node, int index, byte[] data)
+    public string Summary(FlatBufferNodeField node, int index, ReadOnlySpan<byte> data)
     {
         // For each bitflag that is set, print the type and the value by reading the node.
         var sb = new StringBuilder();

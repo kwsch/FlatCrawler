@@ -77,7 +77,7 @@ public sealed class FieldAnalysisResult
             field.Type.PreCheck(field.Size);
     }
 
-    public void ScanFieldType(FlatBufferNodeField entry, byte[] data)
+    public void ScanFieldType(FlatBufferNodeField entry, ReadOnlySpan<byte> data)
     {
         foreach (var (index, field) in Fields)
             field.Observe(entry, index, data);

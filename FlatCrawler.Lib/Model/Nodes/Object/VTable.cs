@@ -1,7 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace FlatCrawler.Lib;
 
@@ -17,21 +17,22 @@ public sealed class VTable
     private const int SizeOfField = sizeof(ushort);
     public const int HeaderSize = SizeOfVTableLength + SizeOfDataTableLength;
 
-    public VTable(byte[] data, int offset)
+    public VTable(ReadOnlySpan<byte> data, int offset)
     {
         Location = offset;
-        VTableLength = BitConverter.ToInt16(data, offset);
-        DataTableLength = BitConverter.ToInt16(data, offset + SizeOfVTableLength);
+        data = data[offset..]; // adjust view window to be relative to vtable location
+        VTableLength = ReadInt16LittleEndian(data);
+        DataTableLength = ReadInt16LittleEndian(data[SizeOfVTableLength..]);
         var fieldCount = (VTableLength - HeaderSize) / SizeOfField;
 
         FieldInfo = new VTableFieldInfo[fieldCount];
-        ReadFieldInfo(data, offset + HeaderSize);
+        ReadFieldInfo(data[HeaderSize..]);
 
         if (FieldInfo.Any(z => z.HasValue && z.Offset >= DataTableLength))
             throw new IndexOutOfRangeException("Field offset is beyond the data table's length.");
     }
 
-    private void ReadFieldInfo(byte[] data, int offset)
+    private void ReadFieldInfo(ReadOnlySpan<byte> data)
     {
         int fieldCount = FieldInfo.Length;
 
@@ -39,7 +40,7 @@ public sealed class VTable
         short[] offsets = new short[fieldCount];
         for (int i = 0; i < fieldCount; i++)
         {
-            var ofs = BitConverter.ToInt16(data, offset + (i * SizeOfField));
+            var ofs = ReadInt16LittleEndian(data[(i * SizeOfField)..]);
             offsets[i] = ofs;
             FieldInfo[i] = new(i, ofs, 0);
         }

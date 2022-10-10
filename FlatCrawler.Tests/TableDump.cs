@@ -16,7 +16,7 @@ public static class TableDump
         DumpFoodTable(Resources.pokecamp_kinomi_table, 7, "kinomi");
     }
 
-    private static void DumpFoodTable(byte[] data, int cellCount, string name)
+    private static void DumpFoodTable(ReadOnlySpan<byte> data, int cellCount, string name)
     {
         FlatBufferRoot root = FlatBufferRoot.Read(0, data);
         var f1 = root.ReadArrayObject(1, data); // union table, yuck
@@ -24,7 +24,7 @@ public static class TableDump
         DumpFoodTable(f1, data, cellCount, name);
     }
 
-    private static void DumpFoodTable(FlatBufferTableObject node, byte[] data, int cellsPerRow, string name)
+    private static void DumpFoodTable(FlatBufferTableObject node, ReadOnlySpan<byte> data, int cellsPerRow, string name)
     {
         var count = node.Length;
         var sb = new StringBuilder(1 << 17);
@@ -47,7 +47,7 @@ public static class TableDump
         File.WriteAllText($"{name}.txt", sb.ToString());
     }
 
-    private static object GetValue(byte type, FlatBufferNodeField obj, byte[] data) => type switch
+    private static object GetValue(byte type, FlatBufferNodeField obj, ReadOnlySpan<byte> data) => type switch
     {
         1 => obj.ReadUInt8(0, data).Value,
         3 => obj.ReadString(0, data).Value,

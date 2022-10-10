@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace FlatCrawler.Lib;
 
@@ -36,16 +36,16 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         FieldInfo = new FBFieldInfo { Type = new FBClass(), IsArray = true };
     }
 
-    private void ReadArray(byte[] data)
+    private void ReadArray(ReadOnlySpan<byte> data)
     {
         for (int i = 0; i < Entries.Length; i++)
             Entries[i] = GetEntryAtIndex(data, i);
     }
 
-    private FlatBufferObject GetEntryAtIndex(byte[] data, int entryIndex)
+    private FlatBufferObject GetEntryAtIndex(ReadOnlySpan<byte> data, int entryIndex)
     {
         var arrayEntryPointerOffset = DataTableOffset + (entryIndex * EntrySize);
-        var dataTablePointerShift = BitConverter.ToInt32(data, arrayEntryPointerOffset);
+        var dataTablePointerShift = ReadInt32LittleEndian(data[arrayEntryPointerOffset..]);
         var dataTableOffset = arrayEntryPointerOffset + dataTablePointerShift;
 
         var entry = FlatBufferObject.Read(arrayEntryPointerOffset, this, data, dataTableOffset);
@@ -56,9 +56,9 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         return entry;
     }
 
-    public static FlatBufferTableObject Read(int offset, FlatBufferNode parent, int fieldIndex, byte[] data)
+    public static FlatBufferTableObject Read(int offset, FlatBufferNode parent, int fieldIndex, ReadOnlySpan<byte> data)
     {
-        int length = BitConverter.ToInt32(data, offset);
+        int length = ReadInt32LittleEndian(data[offset..]);
         var node = new FlatBufferTableObject(offset, length, parent, offset + HeaderSize);
         node.ReadArray(data);
 
@@ -84,5 +84,5 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         return node;
     }
 
-    public static FlatBufferTableObject Read(FlatBufferNodeField parent, int fieldIndex, byte[] data) => Read(parent.GetReferenceOffset(fieldIndex, data), parent, fieldIndex, data);
+    public static FlatBufferTableObject Read(FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data) => Read(parent.GetReferenceOffset(fieldIndex, data), parent, fieldIndex, data);
 }

@@ -1,3 +1,5 @@
+using System;
+
 namespace FlatCrawler.Lib;
 
 public class FieldObservations
@@ -7,7 +9,7 @@ public class FieldObservations
 
     public FieldObservations(FieldSizeTracker size) => Size = size;
 
-    public void Observe(FlatBufferNodeField entry, int index, byte[] data)
+    public void Observe(FlatBufferNodeField entry, int index, ReadOnlySpan<byte> data)
     {
         if (!entry.HasField(index))
             return;
@@ -15,5 +17,5 @@ public class FieldObservations
     }
 
     public string Summary() => $"{{{Size.Summary()}}} {Type.Summary()}";
-    public string Summary(FlatBufferNodeField node, int index, byte[] data) => $"{{{Size.Summary()}}} {Type.Summary(node, index, data)}";
+    public string Summary(FlatBufferNodeField node, int index, ReadOnlySpan<byte> data) => $"{{{Size.Summary()}}} {Type.Summary(node, index, data)}";
 }

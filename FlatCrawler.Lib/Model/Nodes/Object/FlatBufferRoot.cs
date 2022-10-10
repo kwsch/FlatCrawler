@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace FlatCrawler.Lib;
 
@@ -21,9 +22,9 @@ public sealed record FlatBufferRoot : FlatBufferNodeField
         MagicLength = dataTableOffset == HeaderSize ? 0 : magic.Length;
     }
 
-    public static FlatBufferRoot Read(int offset, byte[] data)
+    public static FlatBufferRoot Read(int offset, ReadOnlySpan<byte> data)
     {
-        int dataTableOffset = BitConverter.ToInt32(data, offset) + offset;
+        int dataTableOffset = ReadInt32LittleEndian(data[offset..]) + offset;
         var magic = dataTableOffset == HeaderSize ? NO_MAGIC : ReadMagic(offset + HeaderSize, data);
 
         // Read VTable
@@ -32,15 +33,16 @@ public sealed record FlatBufferRoot : FlatBufferNodeField
         return new FlatBufferRoot(vTable, magic, dataTableOffset);
     }
 
-    private static string ReadMagic(int offset, byte[] data)
+    private static string ReadMagic(int offset, ReadOnlySpan<byte> data)
     {
-        var count = GetMagicCharCount(offset, data);
-        return count == 0 ? NO_MAGIC : Encoding.ASCII.GetString(data, offset, count);
+        var magicRegion = data.Slice(offset, 4);
+        var count = GetMagicCharCount(magicRegion);
+        return count == 0 ? NO_MAGIC : Encoding.ASCII.GetString(magicRegion[..count]);
     }
 
-    private static int GetMagicCharCount(int offset, byte[] data)
+    private static int GetMagicCharCount(ReadOnlySpan<byte> data)
     {
-        var count = Array.IndexOf<byte>(data, 0, offset, MaxMagicLength) - offset;
-        return count <= -1 ? MaxMagicLength : count;
+        var count = data.IndexOf((byte)0);
+        return count == -1 ? MaxMagicLength : count;
     }
 }

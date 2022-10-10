@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace FlatCrawler.Lib;
@@ -20,7 +21,7 @@ public interface IFieldNode
     /// <param name="fieldIndex">Field Index</param>
     /// <param name="data">Full FlatBuffer reference.</param>
     /// <returns>Reference value data table offset.</returns>
-    int GetReferenceOffset(int fieldIndex, byte[] data);
+    int GetReferenceOffset(int fieldIndex, ReadOnlySpan<byte> data);
 
     FlatBufferNode? GetField(int fieldIndex) => AllFields[fieldIndex];
     IReadOnlyList<FlatBufferNode?> AllFields { get; }

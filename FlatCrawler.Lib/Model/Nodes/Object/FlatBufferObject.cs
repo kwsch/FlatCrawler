@@ -73,19 +73,19 @@ public sealed record FlatBufferObject : FlatBufferNodeField
         Debug.WriteLine($"Changing Member Type: {e.MemberIndex} {e.OldType} -> {e.NewType}");
         if (HasField(e.MemberIndex))
         {
-            var node = ReadNode(e.MemberIndex, CommandUtil.Data.ToArray(), e.NewType.Type, e.FieldInfo.IsArray);
+            var node = ReadNode(e.MemberIndex, CommandUtil.Data, e.NewType.Type, e.FieldInfo.IsArray);
             Fields[e.MemberIndex] = node;
             node.TrackFieldInfo(e.FieldInfo);
         }
     }
 
-    public static FlatBufferObject Read(int offset, FlatBufferNode parent, byte[] data)
+    public static FlatBufferObject Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data)
     {
         int tableOffset = offset;
         return Read(offset, parent, data, tableOffset);
     }
 
-    public static FlatBufferObject Read(int offset, FlatBufferNode parent, byte[] data, int tableOffset)
+    public static FlatBufferObject Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data, int tableOffset)
     {
         // Read VTable
         var vTableOffset = GetVtableOffset(tableOffset, data, true);
@@ -97,7 +97,7 @@ public sealed record FlatBufferObject : FlatBufferNodeField
         return new FlatBufferObject(offset, vTable, tableOffset, parent);
     }
 
-    public static FlatBufferObject Read(FlatBufferNodeField parent, int fieldIndex, byte[] data)
+    public static FlatBufferObject Read(FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data)
     {
         var offset = parent.GetReferenceOffset(fieldIndex, data);
         return Read(offset, parent, data);

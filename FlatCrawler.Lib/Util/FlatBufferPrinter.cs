@@ -35,8 +35,7 @@ public class FlatBufferPrinter
         }
 
         var lines = BuildTree(ll.First!);
-        foreach (var line in lines)
-            Output.Add(line);
+        Output.AddRange(lines);
     }
 
     private List<string> BuildTree(LinkedListNode<FlatBufferNode> linkNode)

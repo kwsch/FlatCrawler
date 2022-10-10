@@ -6,7 +6,7 @@ namespace FlatCrawler.Lib;
 
 public static class UnionAnalysis
 {
-    public static UnionAnalysisResult AnalyzeUnion(this IArrayNode array, byte[] data)
+    public static UnionAnalysisResult AnalyzeUnion(this IArrayNode array, ReadOnlySpan<byte> data)
     {
         var result = GetUnionAnalysis(array, data);
         var grouped = result
@@ -16,10 +16,10 @@ public static class UnionAnalysis
         return new UnionAnalysisResult(grouped);
     }
 
-    private static Dictionary<byte, FlatBufferUnionNodeSummary> GetUnionAnalysis(IArrayNode array, byte[] data)
+    private static Dictionary<byte, FlatBufferUnionNodeSummary> GetUnionAnalysis(IArrayNode array, ReadOnlySpan<byte> data)
         => FlatBufferUnionNodeSummaries(array.Entries, data);
 
-    private static Dictionary<byte, FlatBufferUnionNodeSummary> FlatBufferUnionNodeSummaries(IReadOnlyList<FlatBufferNode> entries, byte[] data)
+    private static Dictionary<byte, FlatBufferUnionNodeSummary> FlatBufferUnionNodeSummaries(IReadOnlyList<FlatBufferNode> entries, ReadOnlySpan<byte> data)
     {
         var result = new Dictionary<byte, FlatBufferUnionNodeSummary>();
         for (var index = 0; index < entries.Count; index++)

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -21,7 +22,7 @@ public static class DumpShopData
         CrawlMulti(f1, data, "shop1");
     }
 
-    private static void CrawlSingle(FlatBufferTableObject array, byte[] data, string path)
+    private static void CrawlSingle(FlatBufferTableObject array, ReadOnlySpan<byte> data, string path)
     {
         var sb = new StringBuilder();
         var count = array.Length;
@@ -38,7 +39,7 @@ public static class DumpShopData
         File.WriteAllText(path, sb.ToString());
     }
 
-    private static void CrawlMulti(FlatBufferTableObject array, byte[] data, string path)
+    private static void CrawlMulti(FlatBufferTableObject array, ReadOnlySpan<byte> data, string path)
     {
         var count = array.Length;
         for (int i = 0; i < count; i++)

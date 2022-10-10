@@ -26,7 +26,7 @@ public static class DumpPokeMemory
         DumpThirdTable(f2, data);
     }
 
-    private static void DumpFirstTable(FlatBufferTableObject node, byte[] data)
+    private static void DumpFirstTable(FlatBufferTableObject node, ReadOnlySpan<byte> data)
     {
         var count = node.Length;
         var sb = new StringBuilder();
@@ -54,7 +54,7 @@ public static class DumpPokeMemory
         File.WriteAllText("table0.txt", sb.ToString());
     }
 
-    private static void DumpTypes(FlatBufferTableObject node, byte[] data)
+    private static void DumpTypes(FlatBufferTableObject node, ReadOnlySpan<byte> data)
     {
         var count = node.Length;
         List<byte> result = new();
@@ -68,7 +68,7 @@ public static class DumpPokeMemory
         File.WriteAllBytes("types.bin", result.ToArray());
     }
 
-    private static void DumpMemoryTable(FlatBufferTableObject node, byte[] data)
+    private static void DumpMemoryTable(FlatBufferTableObject node, ReadOnlySpan<byte> data)
     {
         var count = node.Length;
         var sb = new StringBuilder(1 << 17);
@@ -91,7 +91,7 @@ public static class DumpPokeMemory
         File.WriteAllText("table1.txt", sb.ToString());
     }
 
-    private static object GetValue(byte type, FlatBufferNodeField obj, byte[] data) => type switch
+    private static object GetValue(byte type, FlatBufferNodeField obj, ReadOnlySpan<byte> data) => type switch
     {
         1 => obj.ReadUInt8(0, data).Value,
         3 => obj.ReadString(0, data).Value,
@@ -99,7 +99,7 @@ public static class DumpPokeMemory
         _ => throw new ArgumentOutOfRangeException(nameof(type)),
     };
 
-    private static void DumpThirdTable(FlatBufferTableObject node, byte[] data)
+    private static void DumpThirdTable(FlatBufferTableObject node, ReadOnlySpan<byte> data)
     {
         var count = node.Length;
         var sb = new StringBuilder();

@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace FlatCrawler.Lib;
 
@@ -23,14 +24,14 @@ public sealed record FlatBufferStringValue : FlatBufferNode
         Value = str;
     }
 
-    public static FlatBufferStringValue Read(int offset, FlatBufferNode parent, byte[] data)
+    public static FlatBufferStringValue Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data)
     {
-        var encodedOffset = BitConverter.ToInt32(data, offset) + offset;
-        var len = BitConverter.ToInt32(data, encodedOffset);
+        var encodedOffset = ReadInt32LittleEndian(data[offset..]) + offset;
+        var len = ReadInt32LittleEndian(data[encodedOffset..]);
         int charOffset = encodedOffset + HeaderSize;
-        var str = Encoding.UTF8.GetString(data, charOffset, len);
+        var str = Encoding.UTF8.GetString(data.Slice(charOffset, len));
         return new FlatBufferStringValue(offset, encodedOffset, charOffset, len, str, parent);
     }
 
-    public static FlatBufferStringValue Read(FlatBufferNodeField parent, int fieldIndex, byte[] data) => Read(parent.GetFieldOffset(fieldIndex), parent, data);
+    public static FlatBufferStringValue Read(FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data) => Read(parent.GetFieldOffset(fieldIndex), parent, data);
 }

@@ -15,11 +15,22 @@ public sealed record FlatBufferFieldValue<T> : FlatBufferNode, IStructNode where
         Value = value;
     }
 
-    public static FlatBufferFieldValue<T> Read(int offset, FlatBufferNode parent, byte[] data, TypeCode type)
+    public static FlatBufferFieldValue<T> Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data, TypeCode type)
     {
-        var value = MemoryMarshal.Cast<byte, T>(data.AsSpan(offset))[0];
-        return new FlatBufferFieldValue<T>(value, type, parent, offset);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Span<byte> temp = stackalloc byte[Marshal.SizeOf<T>()];
+            data.Slice(offset, temp.Length).CopyTo(temp);
+            temp.Reverse();
+            var value = MemoryMarshal.Read<T>(temp);
+            return new FlatBufferFieldValue<T>(value, type, parent, offset);
+        }
+        else
+        {
+            var value = MemoryMarshal.Read<T>(data[offset..]);
+            return new FlatBufferFieldValue<T>(value, type, parent, offset);
+        }
     }
 
-    public static FlatBufferFieldValue<T> Read(FlatBufferNodeField parent, int fieldIndex, byte[] data, TypeCode type) => Read(parent.GetFieldOffset(fieldIndex), parent, data, type);
+    public static FlatBufferFieldValue<T> Read(FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data, TypeCode type) => Read(parent.GetFieldOffset(fieldIndex), parent, data, type);
 }

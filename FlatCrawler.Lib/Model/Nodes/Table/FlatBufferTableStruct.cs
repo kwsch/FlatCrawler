@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace FlatCrawler.Lib;
 
@@ -13,7 +14,7 @@ public sealed record FlatBufferTableStruct<T> : FlatBufferTable<FlatBufferFieldV
         ArrayType = typeCode;
     }
 
-    private void ReadArray(byte[] data)
+    private void ReadArray(ReadOnlySpan<byte> data)
     {
         for (int i = 0; i < Entries.Length; i++)
             Entries[i] = GetEntryAtIndex(data, i);
@@ -21,19 +22,19 @@ public sealed record FlatBufferTableStruct<T> : FlatBufferTable<FlatBufferFieldV
 
     public override FlatBufferNode GetEntry(int entryIndex) => Entries[entryIndex];
 
-    private FlatBufferFieldValue<T> GetEntryAtIndex(byte[] data, int entryIndex)
+    private FlatBufferFieldValue<T> GetEntryAtIndex(ReadOnlySpan<byte> data, int entryIndex)
     {
         var offset = DataTableOffset + (entryIndex * Marshal.SizeOf<T>());
         return FlatBufferFieldValue<T>.Read(offset, this, data, ArrayType);
     }
 
-    public static FlatBufferTableStruct<T> Read(int offset, FlatBufferNode parent, byte[] data, TypeCode type)
+    public static FlatBufferTableStruct<T> Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data, TypeCode type)
     {
-        int length = BitConverter.ToInt32(data, offset);
+        int length = ReadInt32LittleEndian(data[offset..]);
         var node = new FlatBufferTableStruct<T>(offset, length, parent, offset + 4, type);
         node.ReadArray(data);
         return node;
     }
 
-    public static FlatBufferTableStruct<T> Read(FlatBufferNodeField parent, int fieldIndex, byte[] data, TypeCode type) => Read(parent.GetReferenceOffset(fieldIndex, data), parent, data, type);
+    public static FlatBufferTableStruct<T> Read(FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data, TypeCode type) => Read(parent.GetReferenceOffset(fieldIndex, data), parent, data, type);
 }
