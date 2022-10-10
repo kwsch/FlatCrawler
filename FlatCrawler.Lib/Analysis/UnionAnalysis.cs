@@ -41,6 +41,7 @@ public static class UnionAnalysis
     }
 }
 
+// ReSharper disable once NotAccessedPositionalProperty.Global
 public sealed record FlatBufferUnionNodeSummary(byte Type, int Index, FlatBufferObject Node)
 {
     public int FieldCount => Node.FieldCount;

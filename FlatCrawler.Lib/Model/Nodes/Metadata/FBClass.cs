@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.Linq;
 
 namespace FlatCrawler.Lib;
 
-public sealed record FBClass : FBType
+public sealed record FBClass() : FBType(TypeCode.Object)
 {
     public event EventHandler<MemberTypeChangedArgs>? MemberTypeChanged;
     public event EventHandler<int>? MemberCountChanged;
@@ -16,10 +15,6 @@ public sealed record FBClass : FBType
     public IReadOnlyList<FBFieldInfo> Members => _members;
 
     private readonly SortedDictionary<int, VTable> AssociatedVTables = new();
-
-    public FBClass() :
-        base(TypeCode.Object)
-    { }
 
     public int GetMemberIndex(int offset)
     {
@@ -53,7 +48,6 @@ public sealed record FBClass : FBType
 
         OnMemberTypeChanged(new(memberIndex, member, oldType, member.Type));
     }
-
 
     public void AssociateVTable(VTable vtable)
     {

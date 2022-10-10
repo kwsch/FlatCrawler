@@ -10,7 +10,7 @@ namespace FlatCrawler.Lib
         /// <summary>
         /// The size of the type in bytes. For classes this would be the size of all fields combined.
         /// </summary>
-        public int Size { get; protected set; } = 0;
+        protected int Size { get; set; }
 
         public FBType(TypeCode type = TypeCode.Empty)
         {
