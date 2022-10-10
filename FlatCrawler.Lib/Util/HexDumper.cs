@@ -8,124 +8,126 @@ namespace FlatCrawler.Lib;
 /// <summary>
 /// Modified from https://codereview.stackexchange.com/q/145506
 /// </summary>
-public sealed class HexDumper
+public ref struct HexDumper
 {
-    private readonly byte[] _bytes;
-    private readonly int _bytesPerLine;
-    private readonly bool _showHeader;
-    private readonly bool _showOffset;
-    private readonly bool _showAscii;
+    private readonly ReadOnlySpan<byte> Data; // relative span
+    private readonly HexDumperConfig Config;
+    private readonly int AbsoluteOffset; // offset Data originates from
 
-    private readonly int _length;
+    private int _index = 0; // bytes dumped so far
 
-    private readonly int _start;
-    private int _index;
-    private readonly StringBuilder _sb = new();
-
-    private HexDumper(byte[] bytes, int offset, int length, int bytesPerLine, bool showHeader, bool showOffset, bool showAscii)
+    public HexDumper(ReadOnlySpan<byte> data, int absoluteOffset, HexDumperConfig config)
     {
-        _bytes = bytes;
-        _index = offset;
-        _start = _index;
-        _bytesPerLine = bytesPerLine;
-        _showHeader = showHeader;
-        _showOffset = showOffset;
-        _showAscii = showAscii;
-        _length = (int)Math.Min((uint)length, bytes.Length - _index);
+        Data = data;
+        AbsoluteOffset = absoluteOffset;
+        Config = config;
     }
 
-    public static string Dump(byte[] bytes, int offset, int length = 0x80, int bytesPerLine = 16, bool showHeader = true, bool showOffset = true, bool showAscii = true)
+    public static string Dump(ReadOnlySpan<byte> data, int absoluteOffset)
     {
-        return (new HexDumper(bytes, offset, length, bytesPerLine, showHeader, showOffset, showAscii)).Dump();
+        var span = data[..Math.Min(data.Length, 0x80)];
+        var config = new HexDumperConfig();
+        var dumper = new HexDumper(span, absoluteOffset, config);
+        var sb = new StringBuilder();
+        dumper.Dump(sb);
+        return sb.ToString();
     }
 
-    private string Dump()
+    public void Dump(StringBuilder sb)
     {
-        if (_showHeader)
-            WriteHeader();
-        WriteBody();
-        return _sb.ToString();
+        if (Config.ShowHeader)
+            WriteHeader(sb);
+        WriteBody(sb);
     }
 
-    private void WriteHeader()
+    private void WriteHeader(StringBuilder sb)
     {
         const string ofs = "Offset(h)| ";
 
-        for (int i = 0; i < (_bytesPerLine * 3) + ofs.Length - 1; i++)
-            _sb.Append('-');
-        _sb.AppendLine();
+        for (int i = 0; i < (Config.BytesPerLine * 3) + ofs.Length - 1; i++)
+            sb.Append('-');
+        sb.AppendLine();
 
-        if (_showOffset)
-            _sb.Append(ofs);
+        if (Config.ShowOffset)
+            sb.Append(ofs);
 
-        for (int i = 0; i < _bytesPerLine; i++)
+        for (int i = 0; i < Config.BytesPerLine; i++)
         {
-            _sb.AppendFormat("{0:X2}", i & 0xFF);
-            if (i + 1 < _bytesPerLine)
-                _sb.Append(' ');
+            sb.AppendFormat("{0:X2}", i & 0xFF);
+            if (i + 1 < Config.BytesPerLine)
+                sb.Append(' ');
         }
-        _sb.AppendLine();
+        sb.AppendLine();
 
-        for (int i = 0; i < (_bytesPerLine * 3) + ofs.Length - 1; i++)
-            _sb.Append('-');
-        _sb.AppendLine();
+        for (int i = 0; i < (Config.BytesPerLine * 3) + ofs.Length - 1; i++)
+            sb.Append('-');
+        sb.AppendLine();
     }
 
-    private void WriteBody()
+    private void WriteBody(StringBuilder sb)
     {
         int ctr;
-        while ((ctr = _index - _start) < _length)
+        while ((ctr = _index) < Data.Length)
         {
-            if (ctr % _bytesPerLine == 0)
+            if (ctr % Config.BytesPerLine == 0)
             {
                 if (ctr > 0)
                 {
-                    if (_showAscii)
-                        WriteAscii();
-                    _sb.AppendLine();
+                    if (Config.ShowAscii)
+                        WriteAscii(sb);
+                    sb.AppendLine();
                 }
 
-                if (_showOffset)
-                    WriteOffset();
+                if (Config.ShowOffset)
+                    WriteOffset(sb);
             }
 
-            WriteByte();
-            if ((ctr = _index - _start) % _bytesPerLine != 0 && ctr < _length)
-                _sb.Append(' ');
+            WriteByte(sb);
+            if ((ctr = _index) % Config.BytesPerLine != 0 && ctr < Data.Length)
+                sb.Append(' ');
         }
 
-        if (_showAscii)
-            WriteAscii();
+        if (Config.ShowAscii)
+            WriteAscii(sb);
     }
 
-    private void WriteOffset()
+    private void WriteOffset(StringBuilder sb)
     {
-        _sb.AppendFormat("{0:X8}", _index).Append(" | ");
+        sb.AppendFormat("{0:X8}", AbsoluteOffset + _index).Append(" | ");
     }
 
-    private void WriteByte()
+    private void WriteByte(StringBuilder sb)
     {
-        _sb.AppendFormat("{0:X2}", _bytes[_index]);
+        sb.AppendFormat("{0:X2}", Data[_index]);
         _index++;
     }
 
-    private void WriteAscii()
+    private void WriteAscii(StringBuilder sb)
     {
-        var ctr = _index - _start;
-        int backtrack = ((ctr - 1) / _bytesPerLine) * _bytesPerLine;
+        var ctr = _index;
+        int backtrack = ((ctr - 1) / Config.BytesPerLine) * Config.BytesPerLine;
         int length = ctr - backtrack;
 
-        // This is to fill up last string of the dump if it's shorter than _bytesPerLine
-        _sb.Append(new string(' ', (_bytesPerLine - length) * 3));
+        // This is to fill up last string of the dump if it's shorter than Config.BytesPerLine
+        sb.Append(new string(' ', (Config.BytesPerLine - length) * 3));
 
-        _sb.Append("   ");
-        _sb.EnsureCapacity(_sb.Length + length);
+        sb.Append("   ");
+        sb.EnsureCapacity(sb.Length + length);
 
-        var span = _bytes.AsSpan(backtrack, length);
+        var span = Data.Slice(backtrack, length);
         foreach (var b in span)
         {
             char value = b is < 0x20 or > 0x7E ? '.' : (char)b;
-            _sb.Append(value);
+            sb.Append(value);
         }
     }
+}
+
+public readonly record struct HexDumperConfig
+{
+    public int BytesPerLine { get; init; } = 0x10;
+    public bool ShowHeader { get; init; } = true;
+    public bool ShowOffset { get; init; } = true;
+    public bool ShowAscii { get; init; } = true;
+    public HexDumperConfig() { }
 }

@@ -229,10 +229,9 @@ public class ConsoleCrawler
         }
     }
 
-    private static void DumpHex(byte[] data, int offset)
+    private static void DumpHex(ReadOnlySpan<byte> data, int absoluteOffset)
     {
-        Console.WriteLine($"Requested offset: 0x{offset:X8}");
-        var dump = HexDumper.Dump(data, offset);
+        string dump = HexDumper.Dump(data[absoluteOffset..], absoluteOffset);
         Console.WriteLine(dump);
     }
 
