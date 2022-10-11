@@ -111,15 +111,14 @@ public sealed record FBClass() : FBType(TypeCode.Object)
         int end = Size;
         foreach (var f in sortedFields)
         {
-            var i = f.Index;
+            ref var member = ref _members[f.Index];
+
             var start = f.Offset;
-
-            if (_members[i].Size != end - start)
-            {
+            var delta = end - start;
+            if (member.Size != delta)
                 Debug.WriteLine("Found a size that was incorrectly calculated in the VTable. Should probably update it there too.");
-            }
 
-            _members[i] = _members[i] with { Size = end - start };
+            member = member with { Size = delta };
             end = start;
         }
     }

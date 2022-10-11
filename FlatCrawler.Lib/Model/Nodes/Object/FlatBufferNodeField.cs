@@ -13,7 +13,7 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
     protected FlatBufferNode?[] Fields { get; set; }
     public IReadOnlyList<FlatBufferNode?> AllFields => Fields;
 
-    public bool HasField(int fieldIndex) => fieldIndex < VTable.FieldInfo.Length && VTable.FieldInfo[fieldIndex].HasValue;
+    public bool HasField(int fieldIndex) => (uint)fieldIndex < VTable.FieldInfo.Length && VTable.FieldInfo[fieldIndex].HasValue;
     public int FieldCount => Fields.Length;
 
     protected FlatBufferNodeField(int offset, VTable vTable, int dataTableOffset, FlatBufferNode? parent = null) :
