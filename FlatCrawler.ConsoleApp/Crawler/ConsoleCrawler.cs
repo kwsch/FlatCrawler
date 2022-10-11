@@ -11,7 +11,7 @@ namespace FlatCrawler.ConsoleApp;
 public sealed class ConsoleCrawler
 {
     private readonly List<string> ProcessedCommands = new();
-    private const string SaveStatePath = "lines.txt";
+    private string SaveStatePath = "lines.txt";
 
     private readonly string FilePath;
     private readonly byte[] Data;
@@ -25,6 +25,9 @@ public sealed class ConsoleCrawler
     public void CrawlLoop()
     {
         var fn = Path.GetFileName(FilePath);
+
+        SaveStatePath = Path.ChangeExtension(fn, ".txt");
+
         Console.WriteLine($"Crawling {Console.Title = fn}...");
         Console.WriteLine();
 
@@ -260,7 +263,7 @@ public sealed class ConsoleCrawler
                     return CrawlResult.Silent;
 
                 // reloading state from previous session
-                case "dump":
+                case "save" or "dump":
                     File.WriteAllLines(SaveStatePath, ProcessedCommands);
                     return CrawlResult.Silent;
                 case "load":
