@@ -22,6 +22,19 @@ public sealed class VTable
         Location = offset;
         data = data[offset..]; // adjust view window to be relative to vtable location
         VTableLength = ReadInt16LittleEndian(data);
+
+        // Validate VTable (from https://github.com/dvidelabs/flatcc/blob/master/doc/binary-format.md#verification)
+        // > vtable size is at least the two header fields (2 * sizeof(voffset_t)`).
+        if (VTableLength < HeaderSize)
+            throw new AccessViolationException("Tried to create a VTable from invalid data.");
+
+        // > vtable size is aligned and does not end outside buffer.
+        if (VTableLength > data.Length)
+            throw new AccessViolationException("VTable is beyond the file data length.");
+
+        if (!MemoryUtil.IsAligned((uint)(Location + VTableLength), SizeOfField))
+            throw new AccessViolationException("Invalid VTable, VTable is not aligned.");
+
         DataTableLength = ReadInt16LittleEndian(data[SizeOfVTableLength..]);
         var fieldCount = (VTableLength - HeaderSize) / SizeOfField;
 
