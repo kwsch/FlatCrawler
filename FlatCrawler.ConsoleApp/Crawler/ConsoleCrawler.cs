@@ -14,12 +14,14 @@ public sealed class ConsoleCrawler
     private string SaveStatePath = "lines.txt";
 
     private readonly string FilePath;
-    private readonly byte[] Data;
 
-    public ConsoleCrawler(string path, byte[] data)
+    // TODO: Use the file wrapper
+    private readonly FlatBufferFile FbFile;
+
+    public ConsoleCrawler(string path, FlatBufferFile file)
     {
         FilePath = path;
-        Data = data;
+        FbFile = file;
     }
 
     public void CrawlLoop()
@@ -31,7 +33,7 @@ public sealed class ConsoleCrawler
         Console.WriteLine($"Crawling {Console.Title = fn}...");
         Console.WriteLine();
 
-        FlatBufferNode node = FlatBufferRoot.Read(0, Data);
+        FlatBufferNode node = FlatBufferRoot.Read(0, FbFile.Data);
         node.PrintTree();
 
         Console.OutputEncoding = Encoding.UTF8; // japanese strings will show up as boxes rather than ????
@@ -41,7 +43,7 @@ public sealed class ConsoleCrawler
             var cmd = Console.ReadLine();
             if (cmd is null)
                 break;
-            var result = ProcessCommand(cmd, ref node, Data);
+            var result = ProcessCommand(cmd, ref node, FbFile.Data);
             if (result == CrawlResult.Quit)
                 break;
 
@@ -72,7 +74,7 @@ public sealed class ConsoleCrawler
         return null;
     }
 
-    private CrawlResult ProcessCommand(string cmd, ref FlatBufferNode node, byte[] data)
+    private CrawlResult ProcessCommand(string cmd, ref FlatBufferNode node, ReadOnlySpan<byte> data)
     {
         var sp = cmd.IndexOf(' ');
         if (sp == -1)
@@ -238,7 +240,7 @@ public sealed class ConsoleCrawler
         Console.WriteLine(dump);
     }
 
-    private CrawlResult ProcessCommandSingle(string cmd, ref FlatBufferNode node, byte[] data)
+    private CrawlResult ProcessCommandSingle(string cmd, ref FlatBufferNode node, ReadOnlySpan<byte> data)
     {
         try
         {
@@ -277,14 +279,14 @@ public sealed class ConsoleCrawler
                     AnalyzeUnion(data, a);
                     return CrawlResult.Navigate;
                 case "af" or "analyze" when node is IArrayNode a:
-                    var r = a.AnalyzeFields(data);
+                    var r = a.AnalyzeFields(data.ToArray());
                     if (a.Entries[0] is FlatBufferNodeField first)
                         PrintFieldAnalysis(r, first, data);
                     else
                         PrintFieldAnalysis(r);
                     return CrawlResult.Silent;
                 case "af" or "analyze" when node is FlatBufferNodeField f:
-                    PrintFieldAnalysis(f.AnalyzeFields(data), f, data);
+                    PrintFieldAnalysis(f.AnalyzeFields(data.ToArray()), f, data);
                     return CrawlResult.Silent;
 
                 case "oof" when node is FlatBufferNodeField fn:

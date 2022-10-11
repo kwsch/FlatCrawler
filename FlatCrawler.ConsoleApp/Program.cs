@@ -45,9 +45,14 @@ internal static class Program
             Console.WriteLine("File does not exist.");
             return;
         }
-        var data = File.ReadAllBytes(path);
-        var crawler = new ConsoleCrawler(path, data);
-        Lib.CommandUtil.Data = data;
+        var file = new Lib.FlatBufferFile(path);
+        if (!file.IsValid)
+        {
+            Console.WriteLine("Not a valid flat buffer file.");
+            return;
+        }
+
+        var crawler = new ConsoleCrawler(path, file);
         crawler.CrawlLoop();
     }
 }
