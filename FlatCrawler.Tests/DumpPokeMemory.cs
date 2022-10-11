@@ -16,9 +16,9 @@ public static class DumpPokeMemory
         var data = Resources.poke_memory;
 
         FlatBufferRoot root = FlatBufferRoot.Read(0, data);
-        var f0 = root.ReadArrayObject(0, data);
-        var f1 = root.ReadArrayObject(1, data); // union table, yuck
-        var f2 = root.ReadArrayObject(2, data);
+        var f0 = root.ReadAsTable(data, 0);
+        var f1 = root.ReadAsTable(data, 1); // union table, yuck
+        var f2 = root.ReadAsTable(data, 2);
 
         DumpFirstTable(f0, data);
         DumpTypes(f1, data);
@@ -41,7 +41,7 @@ public static class DumpPokeMemory
                     sb.Append("0,");
                     continue;
                 }
-                var value = entry.ReadInt32(f, data);
+                var value = entry.ReadAs<int>(data, f);
                 sb.Append(value).Append(',');
             }
 
@@ -61,7 +61,7 @@ public static class DumpPokeMemory
         for (int i = 0; i < count; i++)
         {
             var entry = node.GetEntry(i);
-            var type0 = entry.ReadUInt8(0, data);
+            var type0 = entry.ReadAs<byte>(data, 0);
             // Console.WriteLine($"{i:0000} - {type0.Value}");
             result.Add(type0.Value);
         }
@@ -75,8 +75,8 @@ public static class DumpPokeMemory
         for (int i = 0; i < count; i++)
         {
             var entry = node.GetEntry(i);
-            var type0 = entry.ReadUInt8(0, data).Value;
-            var node1 = entry.ReadObject(1, data);
+            var type0 = entry.ReadAs<byte>(data, 0).Value;
+            var node1 = entry.ReadAsObject(data, 1);
             var value = node1 is IFieldNode { AllFields.Count: 0 } ? "0" : GetValue(type0, node1, data);
 
             bool start = i % 0x1F == 0;
@@ -93,9 +93,9 @@ public static class DumpPokeMemory
 
     private static object GetValue(byte type, FlatBufferNodeField obj, ReadOnlySpan<byte> data) => type switch
     {
-        1 => obj.ReadUInt8(0, data).Value,
-        3 => obj.ReadString(0, data).Value,
-        4 => obj.ReadUInt64(0, data).Value.ToString("X16"),
+        1 => obj.ReadAs<byte>(data, 0).Value,
+        3 => obj.ReadAsString(data, 0).Value,
+        4 => obj.ReadAs<ulong>(data, 0).Value.ToString("X16"),
         _ => throw new ArgumentOutOfRangeException(nameof(type)),
     };
 
@@ -106,13 +106,13 @@ public static class DumpPokeMemory
         for (int i = 0; i < count; i++)
         {
             var entry = node.GetEntry(i);
-            var hash = entry.ReadUInt64(0, data).Value;
-            var node1 = entry.ReadArrayObject(1, data);
+            var hash = entry.ReadAs<ulong>(data, 0).Value;
+            var node1 = entry.ReadAsTable(data, 1);
             for (int j = 0; j < node1.Length; j++)
             {
                 var obj = node1.GetEntry(j);
-                var hash0 = obj.ReadUInt64(0, data).Value;
-                var hash1 = obj.ReadUInt64(1, data).Value;
+                var hash0 = obj.ReadAs<ulong>(data, 0).Value;
+                var hash1 = obj.ReadAs<ulong>(data, 1).Value;
                 sb.AppendFormat("{0:X16}", hash).Append(", ").AppendFormat("{0:X16}", hash0).Append(", ").AppendFormat("{0:X16}", hash1).AppendLine();
             }
         }

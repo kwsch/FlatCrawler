@@ -26,9 +26,9 @@ public static class UnionAnalysis
         {
             var flatBufferNode = entries[index];
             var node = (FlatBufferObject)flatBufferNode;
-            var type = node.GetFieldValue(0, data, TypeCode.Byte);
-            var obj = node.ReadObject(1, data);
-            var bval = ((FlatBufferFieldValue<byte>)type).Value;
+            var type = node.ReadAs<byte>(data, 0);
+            var obj = node.ReadAsObject(data, 1);
+            var bval = type.Value;
             var chk = new FlatBufferUnionNodeSummary(bval, index, obj);
             node.TypeName = chk.ToString();
 

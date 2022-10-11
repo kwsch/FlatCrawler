@@ -102,7 +102,7 @@ public record FieldTypeTracker
     {
         try
         {
-            _ = entry.GetTableStruct(index, data, type);
+            _ = entry.ReadArrayAs(data, index, type);
             return 1u << (int)type;
         }
         catch
@@ -115,7 +115,7 @@ public record FieldTypeTracker
     {
         try
         {
-            var child = entry.ReadUInt8(index, data);
+            var child = entry.ReadAs<byte>(data, index);
             if (child.Value is 0 or 1)
                 return 1u << (int)TypeCode.Boolean;
         }
@@ -127,7 +127,7 @@ public record FieldTypeTracker
     {
         try
         {
-            _ = entry.GetFieldValue(index, data, type);
+            _ = entry.ReadAs(data, index, type);
             return 1u << (int)type;
         }
         catch
@@ -199,7 +199,7 @@ public record FieldTypeTracker
                 {
                     try
                     {
-                        var name = node.GetFieldValue(index, data, type);
+                        var name = node.ReadAs(data, index, type);
                         var value = name.TypeName;
                         sb.Append(value).Append(' ');
                     }
@@ -209,13 +209,13 @@ public record FieldTypeTracker
             if ((Single & (1u << (int)TypeCode.Boolean)) != 0)
             {
                 sb.Append(TypeCode.Boolean).Append(' ');
-                sb.Append(node.ReadBool(index, data).Value).Append(' ');
+                sb.Append(node.ReadAs<bool>(data, index).Value).Append(' ');
             }
             if ((Single & (1u << (int)TypeCode.Object)) != 0)
             {
                 try
                 {
-                    var value = node.ReadObject(index, data).TypeName;
+                    var value = node.ReadAsObject(data, index).TypeName;
                     sb.Append(TypeCode.Object).Append(' ');
                     sb.Append(value).Append(' ');
                 }
@@ -225,7 +225,7 @@ public record FieldTypeTracker
             {
                 try
                 {
-                    var value = node.ReadString(index, data).TypeName;
+                    var value = node.ReadAsString(data, index).TypeName;
                     sb.Append(TypeCode.String).Append(' ');
                     sb.Append(value).Append(' ');
                 }
@@ -244,14 +244,14 @@ public record FieldTypeTracker
                 if ((Array & mask) != 0)
                 {
                     sb.Append(type).Append('[');
-                    sb.Append(((IArrayNode)node.GetTableStruct(index, data, type)).Entries.Count).Append("] ");
+                    sb.Append(((IArrayNode)node.ReadArrayAs(data, index, type)).Entries.Count).Append("] ");
                 }
             }
             if ((Array & (1u << (int)TypeCode.Object)) != 0)
             {
                 try
                 {
-                    var length = node.ReadArrayObject(index, data).Entries.Length;
+                    var length = node.ReadAsTable(data, index).Entries.Length;
                     sb.Append(TypeCode.Object);
                     sb.Append('[').Append(length).Append("] ");
                 }
@@ -261,7 +261,7 @@ public record FieldTypeTracker
             {
                 try
                 {
-                    var length = node.ReadArrayString(index, data).Entries.Length;
+                    var length = node.ReadAsStringTable(data, index).Entries.Length;
                     sb.Append(TypeCode.String);
                     sb.Append('[').Append(length).Append("] ");
                 }

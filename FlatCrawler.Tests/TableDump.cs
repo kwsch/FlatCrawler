@@ -19,7 +19,7 @@ public static class TableDump
     private static void DumpFoodTable(ReadOnlySpan<byte> data, int cellCount, string name)
     {
         FlatBufferRoot root = FlatBufferRoot.Read(0, data);
-        var f1 = root.ReadArrayObject(1, data); // union table, yuck
+        var f1 = root.ReadAsTable(data, 1); // union table, yuck
 
         DumpFoodTable(f1, data, cellCount, name);
     }
@@ -31,8 +31,8 @@ public static class TableDump
         for (int i = 0; i < count; i++)
         {
             var entry = node.GetEntry(i);
-            var type0 = entry.ReadUInt8(0, data).Value;
-            var node1 = entry.ReadObject(1, data);
+            var type0 = entry.ReadAs<byte>(data, 0).Value;
+            var node1 = entry.ReadAsObject(data, 1);
             var value = node1 is IFieldNode { AllFields.Count: 0 } ? "0" : GetValue(type0, node1, data);
 
             bool start = i % cellsPerRow == 0;
@@ -40,7 +40,7 @@ public static class TableDump
                 sb.Append('\t');
             sb.Append(value);
 
-            if (i % cellsPerRow == cellsPerRow-1)
+            if (i % cellsPerRow == cellsPerRow - 1)
                 sb.AppendLine();
         }
 
@@ -49,9 +49,9 @@ public static class TableDump
 
     private static object GetValue(byte type, FlatBufferNodeField obj, ReadOnlySpan<byte> data) => type switch
     {
-        1 => obj.ReadUInt8(0, data).Value,
-        3 => obj.ReadString(0, data).Value,
-        4 => obj.ReadUInt64(0, data).Value.ToString("X16"),
+        1 => obj.ReadAs<byte>(data, 0).Value,
+        3 => obj.ReadAsString(data, 0).Value,
+        4 => obj.ReadAs<ulong>(data, 0).Value.ToString("X16"),
         _ => throw new ArgumentOutOfRangeException(nameof(type)),
     };
 }

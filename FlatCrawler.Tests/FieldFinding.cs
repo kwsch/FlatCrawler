@@ -39,7 +39,7 @@ public static class FieldFinding
         const int fieldIndex = 12;
         static bool Criteria(FlatBufferRoot root, byte[] data)
         {
-            var child = root.ReadObject(parentField, data);
+            var child = root.ReadAsObject(data, parentField);
             return child.HasField(fieldIndex);
         }
 
@@ -63,10 +63,10 @@ public static class FieldFinding
         const int fieldIndex = 3;
         static bool Criteria(FlatBufferRoot root, byte[] data)
         {
-            var child = root.ReadArrayObject(parentField, data);
+            var child = root.ReadAsTable(data, parentField);
             foreach (var entry in child.Entries)
             {
-                var meta = entry.ReadObject(0, data);
+                var meta = entry.ReadAsObject(data, 0);
                 return meta.HasField(fieldIndex);
             }
 
