@@ -1,38 +1,50 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace FlatCrawler.Lib;
 
 public static class FieldAnalysis
 {
-    public static FieldAnalysisResult AnalyzeFields(this IArrayNode array, byte[] data)
-        => AnalyzeFields(new FieldNodeSet(data, array.Entries.OfType<FlatBufferNodeField>().ToArray()));
+    public static FieldAnalysisResult AnalyzeFields(this IArrayNode array, ReadOnlySpan<byte> data)
+        => AnalyzeFields(data, array.Entries.OfType<FlatBufferNodeField>().ToArray());
 
-    public static FieldAnalysisResult AnalyzeFields(this FlatBufferNodeField node, byte[] data)
-        => AnalyzeFields(new FieldNodeSet(data, new[] {node}));
+    public static FieldAnalysisResult AnalyzeFields(this FlatBufferNodeField node, ReadOnlySpan<byte> data)
+        => AnalyzeFields(data, node);
 
-    public static FieldAnalysisResult AnalyzeFields(params FieldNodeSet[] input)
+    public static FieldAnalysisResult AnalyzeFields(ReadOnlySpan<byte> data, params FlatBufferNodeField[] nodes)
     {
         var result = new FieldAnalysisResult();
+        result.ScanFieldSize(nodes);
+        result.GuessOverallType();
+        result.ScanFieldType(nodes, data);
+        return result;
+    }
 
-        // Scan all fields, determine size first.
-        foreach (var set in input)
+    public static FieldAnalysisResult AnalyzeFields(IEnumerable<string> paths, Func<FlatBufferRoot, byte[], IEnumerable<FlatBufferNodeField>> fieldSelector)
+    {
+        var sources = paths.Select(File.ReadAllBytes);
+        return AnalyzeFields(sources, fieldSelector);
+    }
+
+    public static FieldAnalysisResult AnalyzeFields(IEnumerable<byte[]> sources, Func<FlatBufferRoot, byte[], IEnumerable<FlatBufferNodeField>> fieldSelector)
+    {
+        var result = new FieldAnalysisResult();
+        var temp = new List<NodeStorage>();
+        foreach (var data in sources)
         {
-            foreach (var entry in set.Entries)
-                result.ScanFieldSize(entry);
+            var root = FlatBufferRoot.Read(0, data);
+            var fields = fieldSelector(root, data).ToArray();
+            result.ScanFieldSize(fields);
+            temp.Add(new NodeStorage(data, fields));
         }
 
         result.GuessOverallType();
-
-        // Scan all fields, determine type.
-        foreach (var (data, entries) in input)
-        {
-            foreach (var entry in entries)
-                result.ScanFieldType(entry, data);
-        }
-
+        foreach (var x in temp)
+            result.ScanFieldType(x.Nodes, x.Data);
         return result;
     }
-}
 
-public sealed record FieldNodeSet(byte[] Data, IReadOnlyList<FlatBufferNodeField> Entries);
+    private readonly record struct NodeStorage(byte[] Data, IReadOnlyList<FlatBufferNodeField> Nodes);
+}

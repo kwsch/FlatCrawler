@@ -279,14 +279,14 @@ public sealed class ConsoleCrawler
                     AnalyzeUnion(data, a);
                     return CrawlResult.Navigate;
                 case "af" or "analyze" when node is IArrayNode a:
-                    var r = a.AnalyzeFields(data.ToArray());
+                    var r = a.AnalyzeFields(data);
                     if (a.Entries[0] is FlatBufferNodeField first)
                         PrintFieldAnalysis(r, first, data);
                     else
                         PrintFieldAnalysis(r);
                     return CrawlResult.Silent;
                 case "af" or "analyze" when node is FlatBufferNodeField f:
-                    PrintFieldAnalysis(f.AnalyzeFields(data.ToArray()), f, data);
+                    PrintFieldAnalysis(f.AnalyzeFields(data), f, data);
                     return CrawlResult.Silent;
 
                 case "oof" when node is FlatBufferNodeField fn:

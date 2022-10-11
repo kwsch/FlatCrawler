@@ -71,6 +71,12 @@ public sealed class FieldAnalysisResult
         return true;
     }
 
+    public void ScanFieldSize(IEnumerable<FlatBufferNodeField> nodes)
+    {
+        foreach (var entry in nodes)
+            ScanFieldSize(entry);
+    }
+
     public void GuessOverallType()
     {
         foreach (var (_, field) in Fields)
@@ -81,5 +87,11 @@ public sealed class FieldAnalysisResult
     {
         foreach (var (index, field) in Fields)
             field.Observe(entry, index, data);
+    }
+
+    public void ScanFieldType(IEnumerable<FlatBufferNodeField> nodes, ReadOnlySpan<byte> data)
+    {
+        foreach (var entry in nodes)
+            ScanFieldType(entry, data);
     }
 }
