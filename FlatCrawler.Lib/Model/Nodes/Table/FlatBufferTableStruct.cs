@@ -19,6 +19,13 @@ public sealed record FlatBufferTableStruct<T> : FlatBufferTable<FlatBufferFieldV
         for (int i = 0; i < Entries.Length; i++)
             Entries[i] = GetEntryAtIndex(data, i);
     }
+    public T[] ToArray()
+    {
+        var result = new T[Length];
+        for (int i = 0; i < result.Length; i++)
+            result[i] = Entries[i].Value;
+        return result;
+    }
 
     public override FlatBufferNode GetEntry(int entryIndex) => Entries[entryIndex];
 

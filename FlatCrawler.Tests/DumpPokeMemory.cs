@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using FlatCrawler.Lib;
@@ -56,16 +55,8 @@ public static class DumpPokeMemory
 
     private static void DumpTypes(FlatBufferTableObject node, ReadOnlySpan<byte> data)
     {
-        var count = node.Length;
-        List<byte> result = new();
-        for (int i = 0; i < count; i++)
-        {
-            var entry = node.GetEntry(i);
-            var type0 = entry.ReadAs<byte>(data, 0);
-            // Console.WriteLine($"{i:0000} - {type0.Value}");
-            result.Add(type0.Value);
-        }
-        File.WriteAllBytes("types.bin", result.ToArray());
+        var result = node.GetUnionTypes(data);
+        File.WriteAllBytes("types.bin", result);
     }
 
     private static void DumpMemoryTable(FlatBufferTableObject node, ReadOnlySpan<byte> data)

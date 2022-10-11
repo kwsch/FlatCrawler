@@ -39,6 +39,19 @@ public static class UnionAnalysis
 
         return result;
     }
+
+    public static byte[] GetUnionTypes(this FlatBufferTableObject node, ReadOnlySpan<byte> data)
+    {
+        var count = node.Length;
+        byte[] result = new byte[count];
+        for (int i = 0; i < count; i++)
+        {
+            var entry = node.GetEntry(i);
+            var type0 = entry.ReadAs<byte>(data, 0);
+            result[i] = type0.Value;
+        }
+        return result;
+    }
 }
 
 // ReSharper disable once NotAccessedPositionalProperty.Global

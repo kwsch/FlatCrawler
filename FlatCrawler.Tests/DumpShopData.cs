@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using FlatCrawler.Lib;
@@ -32,7 +31,7 @@ public static class DumpShopData
             var f0 = node.ReadAs<ulong>(data, 0);
             var io = node.ReadAsObject(data, 1);
             var items = io.ReadArrayAs<int>(data, 0);
-            int[] arr = GetArray(items);
+            int[] arr = items.ToArray();
 
             sb.AppendFormat("{0:X16}", f0.Value).Append(',').AppendJoin(",", arr).AppendLine();
         }
@@ -53,21 +52,12 @@ public static class DumpShopData
             {
                 var sub = tables.GetEntry(t);
                 var items = sub.ReadArrayAs<int>(data, 0);
-                int[] arr = GetArray(items);
+                int[] arr = items.ToArray();
 
                 sb.AppendFormat("{0:X16}", f0.Value).Append(',').AppendJoin(",", arr).AppendLine();
             }
 
             File.WriteAllText($"{path}-{i}.txt", sb.ToString());
         }
-    }
-
-    private static int[] GetArray(FlatBufferTableStruct<int> items)
-    {
-        var list = new List<int>();
-        var count = items.Length;
-        for (int i = 0; i < count; i++)
-            list.Add(items.Entries[i].Value);
-        return list.ToArray();
     }
 }

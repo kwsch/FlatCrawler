@@ -31,20 +31,24 @@ public static class FieldAnalysis
     public static FieldAnalysisResult AnalyzeFields(IEnumerable<byte[]> sources, Func<FlatBufferRoot, byte[], IEnumerable<FlatBufferNodeField>> fieldSelector)
     {
         var result = new FieldAnalysisResult();
-        var temp = new List<NodeStorage>();
+        var temp = new List<NodeStorage<FlatBufferNodeField>>();
         foreach (var data in sources)
         {
             var root = FlatBufferRoot.Read(0, data);
             var fields = fieldSelector(root, data).ToArray();
+
             result.ScanFieldSize(fields);
-            temp.Add(new NodeStorage(data, fields));
+
+            // Retain for later use
+            temp.Add(new(data, fields));
         }
 
         result.GuessOverallType();
+
         foreach (var x in temp)
             result.ScanFieldType(x.Nodes, x.Data);
         return result;
     }
 
-    private readonly record struct NodeStorage(byte[] Data, IReadOnlyList<FlatBufferNodeField> Nodes);
+    private readonly record struct NodeStorage<T>(byte[] Data, IReadOnlyList<T> Nodes);
 }
