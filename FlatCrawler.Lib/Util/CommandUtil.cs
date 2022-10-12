@@ -5,9 +5,6 @@ namespace FlatCrawler.Lib;
 
 public static class CommandUtil
 {
-    // TODO: Make a nice wrapper class for file data
-    public static byte[] Data { get; set; } = Array.Empty<byte>();
-
     /// <summary>
     /// Gets an integer-string tuple from the command line arguments.
     /// </summary>
@@ -62,7 +59,7 @@ public static class CommandUtil
     public static FlatBufferNode ReadNodeAndTrack(this FlatBufferNodeField node, int fieldIndex, ReadOnlySpan<byte> data, TypeCode code, bool asArray)
     {
         var result = node.ReadNode(fieldIndex, data, code, asArray);
-        node.TrackChildFieldNode(fieldIndex, code, asArray, result);
+        node.TrackChildFieldNode(fieldIndex, data, code, asArray, result);
         return result;
     }
 }

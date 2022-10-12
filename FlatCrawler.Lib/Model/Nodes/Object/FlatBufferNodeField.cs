@@ -82,7 +82,7 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
 
     protected static VTable ReadVTable(int offset, ReadOnlySpan<byte> data) => new(data, offset);
 
-    public virtual void TrackChildFieldNode(int fieldIndex, TypeCode code, bool asArray, FlatBufferNode node)
+    public virtual void TrackChildFieldNode(int fieldIndex, ReadOnlySpan<byte> data, TypeCode code, bool asArray, FlatBufferNode node)
     {
         Fields[fieldIndex] = node;
     }

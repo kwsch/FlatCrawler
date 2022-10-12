@@ -31,7 +31,7 @@ public sealed record FBClass() : FBType(TypeCode.Object)
         return index;
     }
 
-    public void SetMemberType(int memberIndex, TypeCode type, bool asArray = false)
+    public void SetMemberType(int memberIndex, ReadOnlySpan<byte> data, TypeCode type, bool asArray = false)
     {
         var member = _members[memberIndex];
         var oldType = member.Type;
@@ -45,7 +45,7 @@ public sealed record FBClass() : FBType(TypeCode.Object)
 
         _members[memberIndex] = member;
 
-        OnMemberTypeChanged(new(memberIndex, member, oldType, member.Type));
+        OnMemberTypeChanged(new(memberIndex, data.ToArray(), member, oldType, member.Type));
     }
 
     public void AssociateVTable(VTable vtable)

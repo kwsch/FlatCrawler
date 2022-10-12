@@ -23,9 +23,9 @@ public sealed record FlatBufferObject : FlatBufferNodeField
         UnRegisterObjectClass();
     }
 
-    public override void TrackChildFieldNode(int fieldIndex, TypeCode code, bool asArray, FlatBufferNode node)
+    public override void TrackChildFieldNode(int fieldIndex, ReadOnlySpan<byte> data, TypeCode code, bool asArray, FlatBufferNode node)
     {
-        ObjectClass.SetMemberType(fieldIndex, code, asArray);
+        ObjectClass.SetMemberType(fieldIndex, data, code, asArray);
 
         Fields[fieldIndex] = node;
         node.TrackFieldInfo(ObjectClass.Members[fieldIndex]);
@@ -77,7 +77,7 @@ public sealed record FlatBufferObject : FlatBufferNodeField
         Debug.WriteLine($"Changing Member Type: {e.MemberIndex} {e.OldType} -> {e.NewType}");
         if (HasField(e.MemberIndex))
         {
-            var node = ReadNode(e.MemberIndex, CommandUtil.Data, e.NewType.Type, e.FieldInfo.IsArray);
+            var node = ReadNode(e.MemberIndex, e.Data, e.NewType.Type, e.FieldInfo.IsArray);
             Fields[e.MemberIndex] = node;
             node.TrackFieldInfo(e.FieldInfo);
         }
