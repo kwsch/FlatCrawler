@@ -16,7 +16,7 @@ public static class TypeCodeUtil
             text = text[..^2];
         }
 
-        if (text == "table")
+        if (text.Equals("table", StringComparison.OrdinalIgnoreCase))
             return (true, TypeCode.Object);
         return (asArray, GetTypeCode(text));
     }
