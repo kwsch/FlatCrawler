@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -60,177 +59,188 @@ public sealed class ConsoleCrawler
         }
     }
 
-    private static FlatBufferNode? GetNodeAtIndex(FlatBufferNode parent, string index)
+    private static FlatBufferNode? GetNodeAtIndex(FlatBufferNode parent, int index) => parent switch
     {
-        if (parent is IFieldNode fn)
-        {
-            var fieldIndex = CommandUtil.GetIntPossibleHex(index);
-            return fn.GetField(fieldIndex) ?? throw new ArgumentNullException(nameof(FlatBufferNode), "node not explored yet.");
-        }
-        if (parent is IArrayNode an)
-        {
-            return an.GetEntry(int.Parse(index));
-        }
-        return null;
-    }
+        IFieldNode fn => fn.GetField(index) ?? throw new ArgumentNullException(nameof(FlatBufferNode), "node not explored yet."),
+        IArrayNode an => an.GetEntry(index),
+        _ => null,
+    };
 
-    private CrawlResult ProcessCommand(string cmd, ref FlatBufferNode node, ReadOnlySpan<byte> data)
+    private CrawlResult ProcessCommand(ReadOnlySpan<char> cmd, ref FlatBufferNode node, ReadOnlySpan<byte> data)
     {
-        var sp = cmd.IndexOf(' ');
-        if (sp == -1)
-            return ProcessCommandSingle(cmd.ToLowerInvariant(), ref node, data);
-        var c = cmd[..sp].ToLowerInvariant();
-        if (string.IsNullOrWhiteSpace(c))
+        cmd = cmd.Trim();
+        if (cmd.Length == 0)
             return CrawlResult.Unrecognized;
 
-        var args = cmd[(sp + 1)..];
+        var indexOfFirstSpace = cmd.IndexOf(' ');
+        if (indexOfFirstSpace == -1)
+        {
+            Span<char> lower = stackalloc char[cmd.Length];
+            cmd.ToLowerInvariant(lower);
+            return ProcessCommandSingle(lower, ref node, data);
+        }
+
+        var tmp = cmd[..indexOfFirstSpace];
+        Span<char> cmdLower = stackalloc char[tmp.Length];
+        tmp.ToLowerInvariant(cmdLower);
+
+        var args = cmd[(indexOfFirstSpace + 1)..];
         try
         {
-            switch (c)
-            {
-                case "n" or "name" or "fieldname":
-                {
-                    if (!args.Contains(' '))
-                    {
-                        node.Name = args;
-                        return CrawlResult.Update;
-                    }
-
-                    var argSplit = args.Split(' ');
-                    var toRename = GetNodeAtIndex(node, argSplit[0]);
-
-                    if (toRename != null)
-                        toRename.Name = argSplit[1];
-
-                    return CrawlResult.Update;
-                }
-                case "t" or "type" or "typename":
-                {
-                    if (!args.Contains(' '))
-                    {
-                        node.TypeName = args;
-                        return CrawlResult.Update;
-                    }
-
-                    var argSplit = args.Split(' ');
-                    var toRename = GetNodeAtIndex(node, argSplit[0]);
-
-                    if (toRename != null)
-                        toRename.TypeName = argSplit[1];
-                    return CrawlResult.Update;
-                }
-                case "ro" when node is IFieldNode p:
-                {
-                    var fieldIndex = CommandUtil.GetIntPossibleHex(args);
-                    var ofs = p.GetReferenceOffset(fieldIndex, data);
-                    Console.WriteLine($"Offset: 0x{ofs:X}");
-                    return CrawlResult.Silent;
-                }
-                case "fo" when node is IFieldNode p:
-                {
-                    var fieldIndex = CommandUtil.GetIntPossibleHex(args);
-                    var ofs = p.GetFieldOffset(fieldIndex);
-                    Console.WriteLine($"Offset: 0x{ofs:X}");
-                    return CrawlResult.Silent;
-                }
-                case "eo" when node is IArrayNode p:
-                {
-                    var fieldIndex = CommandUtil.GetIntPossibleHex(args);
-                    var ofs = p.GetEntry(fieldIndex).Offset;
-                    Console.WriteLine($"Offset: 0x{ofs:X}");
-                    return CrawlResult.Silent;
-                }
-                case "rf" when node is IFieldNode p:
-                {
-                    if (!args.Contains(' '))
-                    {
-                        var index = CommandUtil.GetIntPossibleHex(args);
-                        node = p.GetField(index) ?? throw new ArgumentNullException(nameof(FlatBufferNode), "node not explored yet.");
-                        return CrawlResult.Navigate;
-                    }
-
-                    var (fieldIndex, fieldType) = CommandUtil.GetDualArgs(args);
-                    var result = node.ReadNode(fieldIndex, fieldType.ToLowerInvariant(), data);
-                    if (result is not (IStructNode or FlatBufferStringValue))
-                        node = result;
-                    return CrawlResult.Navigate;
-                }
-                case "rf" when node is IArrayNode p:
-                {
-                    if (!args.Contains(' '))
-                    {
-                        node = p.GetEntry(int.Parse(args));
-                        return CrawlResult.Navigate;
-                    }
-
-                    var (fieldIndex, fieldType) = CommandUtil.GetDualArgs(args);
-                    var result = node.ReadNode(fieldIndex, fieldType.ToLowerInvariant(), data);
-                    if (result is not (IStructNode or FlatBufferStringValue))
-                        node = result;
-                    return CrawlResult.Navigate;
-                }
-                case "rf":
-                {
-                    Console.WriteLine("Node has no fields. Unable to read the requested field node.");
-                    return CrawlResult.Silent;
-                }
-                case "fowf" when node is IArrayNode p:
-                {
-                    var (objectIndex, other) = CommandUtil.GetDualArgs(args);
-                    var fieldIndex = int.Parse(other);
-                    for (int i = 0; i < p.Entries.Count; i++)
-                    {
-                        var x = p.GetEntry(i);
-                        var y = x.ReadNode(objectIndex, "object", data);
-                        var fc = ((FlatBufferNodeField)y).HasField(fieldIndex);
-                        if (!fc)
-                            continue;
-                        Console.WriteLine($"Entry {i} has an object at field {objectIndex} with a value for its Field {fieldIndex}");
-                        return CrawlResult.Silent;
-                    }
-                    Console.WriteLine("Node has no fields. Unable to read the requested field node.");
-                    return CrawlResult.Silent;
-                }
-                case "fewf" when node is IArrayNode p:
-                {
-                    var fIndex = int.Parse(args);
-                    var result = p.GetEntryIndexWithField(fIndex);
-                    Console.WriteLine(result != -1
-                        ? $"Entry {result} has a value for Field {fIndex}"
-                        : "No entry has a value for that field.");
-                    return CrawlResult.Silent;
-                }
-                case "fewfs" when node is IArrayNode p:
-                {
-                    var fIndex = int.Parse(args);
-                    var result = p.GetEntryIndexesWithField(fIndex);
-                    Console.WriteLine(result.Count != 0
-                        ? $"Entries having a value for field {fIndex}: {string.Join(" ", result)}"
-                        : "No entry has a value for that field.");
-                    return CrawlResult.Silent;
-                }
-                case "of" when node is FlatBufferNodeField f:
-                {
-                    var offset = int.Parse(args.Replace("0x", ""), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-                    var index = f.VTable.GetFieldIndex(offset - f.DataTableOffset);
-                    Console.WriteLine($"Offset {offset:X} is Field {index}");
-                    return CrawlResult.Silent;
-                }
-
-                case "hex" or "h":
-                {
-                    var offset = int.Parse(args.Replace("0x", ""), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-                    DumpHex(data, offset);
-                    return CrawlResult.Silent;
-                }
-                default:
-                    return CrawlResult.Unrecognized;
-            }
+            return ProcessCommand(cmdLower, args, ref node, data);
         }
         catch (Exception ex)
         {
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine(ex);
+            Console.ResetColor();
             return CrawlResult.Error;
+        }
+    }
+
+    private static CrawlResult ProcessCommand(ReadOnlySpan<char> cmd, ReadOnlySpan<char> args, ref FlatBufferNode node, ReadOnlySpan<byte> data)
+    {
+        switch (cmd)
+        {
+            case "n" or "name" or "fieldname":
+            {
+                if (!args.Contains(' '))
+                {
+                    node.Name = args.ToString();
+                    return CrawlResult.Update;
+                }
+
+                var argSplit = CommandUtil.GetDualArgs(args);
+                var toRename = GetNodeAtIndex(node, argSplit.Index);
+                if (toRename != null)
+                    toRename.Name = argSplit.String;
+
+                return CrawlResult.Update;
+            }
+            case "t" or "type" or "typename":
+            {
+                if (!args.Contains(' '))
+                {
+                    node.TypeName = args.ToString();
+                    return CrawlResult.Update;
+                }
+
+                var argSplit = CommandUtil.GetDualArgs(args);
+                var toRename = GetNodeAtIndex(node, argSplit.Index);
+                if (toRename != null)
+                    toRename.TypeName = argSplit.String;
+
+                return CrawlResult.Update;
+            }
+            case "ro" when node is IFieldNode p:
+            {
+                var fieldIndex = CommandUtil.GetIntPossibleHex(args);
+                var ofs = p.GetReferenceOffset(fieldIndex, data);
+                Console.WriteLine($"Offset: 0x{ofs:X}");
+                return CrawlResult.Silent;
+            }
+            case "fo" when node is IFieldNode p:
+            {
+                var fieldIndex = CommandUtil.GetIntPossibleHex(args);
+                var ofs = p.GetFieldOffset(fieldIndex);
+                Console.WriteLine($"Offset: 0x{ofs:X}");
+                return CrawlResult.Silent;
+            }
+            case "eo" when node is IArrayNode p:
+            {
+                var fieldIndex = CommandUtil.GetIntPossibleHex(args);
+                var ofs = p.GetEntry(fieldIndex).Offset;
+                Console.WriteLine($"Offset: 0x{ofs:X}");
+                return CrawlResult.Silent;
+            }
+            case "rf" when node is IFieldNode p:
+            {
+                if (!args.Contains(' '))
+                {
+                    var index = CommandUtil.GetIntPossibleHex(args);
+                    node = p.GetField(index) ??
+                           throw new ArgumentNullException(nameof(FlatBufferNode), "node not explored yet.");
+                    return CrawlResult.Navigate;
+                }
+
+                var (fieldIndex, fieldType) = CommandUtil.GetDualArgs(args);
+                var result = node.ReadNode(fieldIndex, data, fieldType.ToLowerInvariant());
+                if (result is not (IStructNode or FlatBufferStringValue))
+                    node = result;
+                return CrawlResult.Navigate;
+            }
+            case "rf" when node is IArrayNode p:
+            {
+                if (!args.Contains(' '))
+                {
+                    node = p.GetEntry(int.Parse(args));
+                    return CrawlResult.Navigate;
+                }
+
+                var (fieldIndex, fieldType) = CommandUtil.GetDualArgs(args);
+                var result = node.ReadNode(fieldIndex, data, fieldType.ToLowerInvariant());
+                if (result is not (IStructNode or FlatBufferStringValue))
+                    node = result;
+                return CrawlResult.Navigate;
+            }
+            case "rf":
+            {
+                Console.WriteLine("Node has no fields. Unable to read the requested field node.");
+                return CrawlResult.Silent;
+            }
+            case "fowf" when node is IArrayNode p:
+            {
+                var (objectIndex, other) = CommandUtil.GetDualArgs(args);
+                var fieldIndex = int.Parse(other);
+                for (int i = 0; i < p.Entries.Count; i++)
+                {
+                    var x = p.GetEntry(i);
+                    var y = x.ReadNode(objectIndex, data, "object");
+                    var fc = ((FlatBufferNodeField)y).HasField(fieldIndex);
+                    if (!fc)
+                        continue;
+                    Console.WriteLine(
+                        $"Entry {i} has an object at field {objectIndex} with a value for its Field {fieldIndex}");
+                    return CrawlResult.Silent;
+                }
+
+                Console.WriteLine("Node has no fields. Unable to read the requested field node.");
+                return CrawlResult.Silent;
+            }
+            case "fewf" when node is IArrayNode p:
+            {
+                var fIndex = int.Parse(args);
+                var result = p.GetEntryIndexWithField(fIndex);
+                Console.WriteLine(result != -1
+                    ? $"Entry {result} has a value for Field {fIndex}"
+                    : "No entry has a value for that field.");
+                return CrawlResult.Silent;
+            }
+            case "fewfs" when node is IArrayNode p:
+            {
+                var fIndex = int.Parse(args);
+                var result = p.GetEntryIndexesWithField(fIndex);
+                Console.WriteLine(result.Count != 0
+                    ? $"Entries having a value for field {fIndex}: {string.Join(" ", result)}"
+                    : "No entry has a value for that field.");
+                return CrawlResult.Silent;
+            }
+            case "of" when node is FlatBufferNodeField f:
+            {
+                var offset = CommandUtil.GetIntFromHex(args);
+                var index = f.VTable.GetFieldIndex(offset - f.DataTableOffset);
+                Console.WriteLine($"Offset {offset:X} is Field {index}");
+                return CrawlResult.Silent;
+            }
+
+            case "hex" or "h":
+            {
+                var offset = CommandUtil.GetIntFromHex(args);
+                DumpHex(data, offset);
+                return CrawlResult.Silent;
+            }
+            default:
+                return CrawlResult.Unrecognized;
         }
     }
 
@@ -240,7 +250,7 @@ public sealed class ConsoleCrawler
         Console.WriteLine(dump);
     }
 
-    private CrawlResult ProcessCommandSingle(string cmd, ref FlatBufferNode node, ReadOnlySpan<byte> data)
+    private CrawlResult ProcessCommandSingle(ReadOnlySpan<char> cmd, ref FlatBufferNode node, ReadOnlySpan<byte> data)
     {
         try
         {
@@ -330,7 +340,7 @@ public sealed class ConsoleCrawler
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine(ex);
-            Console.ForegroundColor = ConsoleColor.White;
+            Console.ResetColor();
             return CrawlResult.Error;
         }
     }

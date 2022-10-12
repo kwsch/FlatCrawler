@@ -8,27 +8,54 @@ public static class CommandUtil
     // TODO: Make a nice wrapper class for file data
     public static byte[] Data { get; set; } = Array.Empty<byte>();
 
-    public static (int FieldIndex, string FieldType) GetDualArgs(string args)
+    /// <summary>
+    /// Gets an integer-string tuple from the command line arguments.
+    /// </summary>
+    /// <param name="args">The command line arguments.</param>
+    /// <exception cref="ArgumentException">Thrown if the arguments are invalid.</exception>
+    public static (int Index, string String) GetDualArgs(ReadOnlySpan<char> args)
     {
-        var argSplit = args.Split(' ');
-        return (int.Parse(argSplit[0]), argSplit[1]);
+        args = args.Trim();
+        var space = args.IndexOf(' ');
+        if (space == -1)
+            throw new ArgumentException("Expected two arguments, got one", nameof(args));
+
+        var num = int.Parse(args[..space]);
+        var second = args[(space + 1)..];
+        space = second.IndexOf(' ');
+        if (space != -1)
+            second = second[..space];
+        return (num, second.Trim().ToString());
     }
 
-    public static int GetIntPossibleHex(string txt) => txt.Contains("0x")
-        ? int.Parse(txt.Replace("0x", ""), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
-        : int.Parse(txt, CultureInfo.InvariantCulture);
+    private const string HexPrefix = "0x";
 
-    public static FlatBufferNode ReadNode(this FlatBufferNode node, int fieldIndex, string type, ReadOnlySpan<byte> data) => node switch
+    public static int GetIntFromHex(ReadOnlySpan<char> hex)
+    {
+        hex = hex.Trim();
+        if (hex.StartsWith(HexPrefix, StringComparison.OrdinalIgnoreCase))
+            hex = hex[HexPrefix.Length..];
+        return int.Parse(hex, NumberStyles.HexNumber);
+    }
+
+    public static int GetIntPossibleHex(ReadOnlySpan<char> txt)
+    {
+        txt = txt.Trim();
+        return txt.StartsWith(HexPrefix, StringComparison.OrdinalIgnoreCase)
+            ? int.Parse(txt[HexPrefix.Length..], NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+            : int.Parse(txt, NumberStyles.Integer, CultureInfo.InvariantCulture);
+    }
+
+    public static FlatBufferNode ReadNode(this FlatBufferNode node, int fieldIndex, ReadOnlySpan<byte> data, ReadOnlySpan<char> type) => node switch
     {
         IArrayNode a => a.GetEntry(fieldIndex),
         FlatBufferNodeField r => r.ReadNodeAndTrack(fieldIndex, data, type),
         _ => throw new ArgumentException($"Node at {fieldIndex} has an unrecognized node type ({node.GetType().Name})."),
     };
 
-    private static FlatBufferNode ReadNodeAndTrack(this FlatBufferNodeField node, int fieldIndex, ReadOnlySpan<byte> data, string type)
+    private static FlatBufferNode ReadNodeAndTrack(this FlatBufferNodeField node, int fieldIndex, ReadOnlySpan<byte> data, ReadOnlySpan<char> type)
     {
-        var code = TypeCodeUtil.GetTypeCode(type);
-        bool asArray = type == "table" || type.Contains("[]");
+        (bool asArray, TypeCode code) = TypeCodeUtil.GetTypeCodeTuple(type);
         return node.ReadNodeAndTrack(fieldIndex, data, code, asArray);
     }
 

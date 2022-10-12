@@ -6,7 +6,22 @@ public static class TypeCodeUtil
 {
     public const TypeCode Unrecognized = TypeCode.Empty;
 
-    public static TypeCode GetTypeCode(string type) => type.Replace(" ", "").Replace("[]", "") switch
+    public static (bool AsArray, TypeCode Type) GetTypeCodeTuple(ReadOnlySpan<char> text)
+    {
+        text = text.Trim();
+        bool asArray = false;
+        if (text.EndsWith("[]", StringComparison.Ordinal))
+        {
+            asArray = true;
+            text = text[..^2];
+        }
+
+        if (text == "table")
+            return (true, TypeCode.Object);
+        return (asArray, GetTypeCode(text));
+    }
+
+    public static TypeCode GetTypeCode(ReadOnlySpan<char> type) => type switch
     {
         "bool" => TypeCode.Boolean,
 
