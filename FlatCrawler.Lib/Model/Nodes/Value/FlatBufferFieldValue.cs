@@ -3,11 +3,30 @@ using System.Runtime.InteropServices;
 
 namespace FlatCrawler.Lib;
 
+/// <summary>
+/// Node comprising of a serialized struct value.
+/// </summary>
+/// <typeparam name="T">integral numeric types and floating point types only.</typeparam>
 public sealed record FlatBufferFieldValue<T> : FlatBufferNode, IStructNode where T : struct
 {
-    public override string TypeName { get => Value is not IFormattable f ? Type.ToString() : Type is not TypeCode.Single or TypeCode.Double ? $"{Type} {f:X} ({f})" : $"{Type} {f}"; set { } }
+    /// <summary> The type of the value, <typeparamref name="T"/>. </summary>
     public TypeCode Type { get; }
+
+    /// <summary> The value of the node. </summary>
     public T Value { get; }
+
+    public override string TypeName
+    {
+        get
+        {
+            if (Value is not IFormattable f)
+                return Type.ToString();
+            if (Type is not TypeCode.Single or TypeCode.Double)
+                return $"{Type} {f:X} ({f})";
+            return $"{Type} {f}";
+        }
+        set { }
+    }
 
     private FlatBufferFieldValue(T value, TypeCode type, FlatBufferNode parent, int offset) : base(offset, parent)
     {
@@ -15,6 +34,14 @@ public sealed record FlatBufferFieldValue<T> : FlatBufferNode, IStructNode where
         Value = value;
     }
 
+    /// <summary>
+    /// Reads a new node of the specified type from the provided inputs.
+    /// </summary>
+    /// <param name="offset">Offset of the new node</param>
+    /// <param name="parent">Parent that owns this child node</param>
+    /// <param name="data">FlatBuffer binary</param>
+    /// <param name="type">Type of the new node</param>
+    /// <returns>A new node of the specified type</returns>
     public static FlatBufferFieldValue<T> Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data, TypeCode type)
     {
         if (!BitConverter.IsLittleEndian)
@@ -32,5 +59,13 @@ public sealed record FlatBufferFieldValue<T> : FlatBufferNode, IStructNode where
         }
     }
 
+    /// <summary>
+    /// Reads a new node of the specified type from the provided inputs.
+    /// </summary>
+    /// <param name="parent">Parent that owns this child node</param>
+    /// <param name="fieldIndex">Index of the field in the parent's VTable</param>
+    /// <param name="data">FlatBuffer binary</param>
+    /// <param name="type">Type of the new node</param>
+    /// <returns>A new node of the specified type</returns>
     public static FlatBufferFieldValue<T> Read(FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data, TypeCode type) => Read(parent.GetFieldOffset(fieldIndex), parent, data, type);
 }

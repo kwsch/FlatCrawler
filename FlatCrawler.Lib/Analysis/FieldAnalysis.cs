@@ -5,6 +5,9 @@ using System.Linq;
 
 namespace FlatCrawler.Lib;
 
+/// <summary>
+/// Analyzes nodes with the same schema to determine the possible types of each field.
+/// </summary>
 public static class FieldAnalysis
 {
     public static FieldAnalysisResult AnalyzeFields(this IArrayNode array, ReadOnlySpan<byte> data)

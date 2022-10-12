@@ -2,8 +2,12 @@ using System;
 
 namespace FlatCrawler.Lib;
 
+/// <summary>
+/// Parses a type code string into a <see cref="TypeCode"/> and a boolean indicating whether the type is an array.
+/// </summary>
 public static class TypeCodeUtil
 {
+    /// <summary> Unrecognized type code -- treat as invalid. </summary>
     public const TypeCode Unrecognized = TypeCode.Empty;
 
     public static (bool AsArray, TypeCode Type) GetTypeCodeTuple(ReadOnlySpan<char> text)
@@ -28,6 +32,9 @@ public static class TypeCodeUtil
         return (asArray, type);
     }
 
+    /// <summary>
+    /// Parses a type code string into a <see cref="TypeCode"/>.
+    /// </summary>
     public static TypeCode GetTypeCode(ReadOnlySpan<char> type) => type switch
     {
         "bool" => TypeCode.Boolean,
@@ -42,7 +49,7 @@ public static class TypeCodeUtil
         "uint" or "u32" or "i32" => TypeCode.UInt32,
         "ulong" or "u64" or "i64" => TypeCode.UInt64,
 
-        "float" => TypeCode.Single,
+        "float" or "single" => TypeCode.Single,
         "double" => TypeCode.Double,
 
         "string" or "str" => TypeCode.String,
@@ -50,5 +57,8 @@ public static class TypeCodeUtil
         _ => Unrecognized,
     };
 
-    public static bool IsValidNodeType(this TypeCode type) => type is not Unrecognized;
+    /// <summary>
+    /// Checks if the type code is a recognized node type.
+    /// </summary>
+    public static bool IsValidNodeType(this TypeCode type) => type is not (<= Unrecognized or TypeCode.Decimal or TypeCode.DateTime or TypeCode.Char or > TypeCode.String);
 }

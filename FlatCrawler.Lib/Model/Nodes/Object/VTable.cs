@@ -5,17 +5,36 @@ using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace FlatCrawler.Lib;
 
+/// <summary>
+/// Virtual method table containing pointers to the schema object's field data.
+/// Indicates if a field is present with data for the serialized schema object.
+/// </summary>
 public sealed class VTable
 {
+    /// <summary>
+    /// Absolute offset of the VTable in the data.
+    /// </summary>
     public readonly int Location;
+
+    /// <summary>
+    /// The size of the VTable in bytes.
+    /// </summary>
     public readonly short VTableLength;
+
+    /// <summary>
+    /// The size of the object's serialized data in bytes.
+    /// </summary>
     public readonly short DataTableLength;
+
+    /// <summary>
+    /// A list of fields that may be present in the serialized object.
+    /// </summary>
     public readonly VTableFieldInfo[] FieldInfo;
 
     private const int SizeOfVTableLength = sizeof(ushort);
     private const int SizeOfDataTableLength = sizeof(ushort);
     private const int SizeOfField = sizeof(ushort);
-    public const int HeaderSize = SizeOfVTableLength + SizeOfDataTableLength;
+    private const int HeaderSize = SizeOfVTableLength + SizeOfDataTableLength;
 
     public VTable(ReadOnlySpan<byte> data, int offset)
     {
@@ -80,6 +99,11 @@ public sealed class VTable
         }
     }
 
+    /// <summary>
+    /// Gets the index of the field within <see cref="FieldInfo"/> that exists at the requested offset.
+    /// </summary>
+    /// <param name="offset">Relative offset (raw value in VTable).</param>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     public int GetFieldIndex(int offset)
     {
         if (offset == 0)
@@ -92,6 +116,10 @@ public sealed class VTable
         return index;
     }
 
+    /// <summary>
+    /// Gets a printable string of the VTable's data.
+    /// </summary>
+    /// <param name="bias">Offset shift to add to each field's relative offset pointer. Useful to point to the absolute offset for manual analysis.</param>
     public string GetFieldOrder(int bias = 0)
     {
         var tuples = FieldInfo.Where(z => z.HasValue).OrderBy(z => z.Offset);

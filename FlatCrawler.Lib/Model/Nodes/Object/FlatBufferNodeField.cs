@@ -4,16 +4,39 @@ using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace FlatCrawler.Lib;
 
+/// <summary>
+/// Node with multiple fields defined by a schema.
+/// </summary>
 public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
 {
+    /// <summary> Metadata that manages pointers to field data. </summary>
     public VTable VTable { get; }
+
+    /// <summary> Absolute offset of the field data for this node. </summary>
     public int DataTableOffset { get; }
+
+    /// <summary>
+    /// Absolute offset of the <see cref="VTable"/> metadata.
+    /// </summary>
     public int VTableOffset => VTable.Location;
 
+    /// <summary> All explored child nodes for this parent node. Null if unexplored. </summary>
     protected FlatBufferNode?[] Fields { get; set; }
+
+    /// <summary> All explored child nodes for this parent node (immutable). Null if unexplored. </summary>
     public IReadOnlyList<FlatBufferNode?> AllFields => Fields;
 
+    /// <summary>
+    /// Checks if the <see cref="VTable"/> has data for the requested <see cref="fieldIndex"/>.
+    /// </summary>
+    /// <param name="fieldIndex">Field index</param>
+    /// <returns>True if the <see cref="VTable"/> has a valid pointer to data for this field. </returns>
     public bool HasField(int fieldIndex) => (uint)fieldIndex < VTable.FieldInfo.Length && VTable.FieldInfo[fieldIndex].HasValue;
+
+    /// <summary>
+    /// Count of fields in the <see cref="VTable"/>.
+    /// </summary>
+    /// <remarks> The schema may have more fields beyond the indexes found in the VTable, but they are default value if requested. </remarks>
     public int FieldCount => Fields.Length;
 
     protected FlatBufferNodeField(int offset, VTable vTable, int dataTableOffset, FlatBufferNode? parent = null) :
@@ -24,6 +47,11 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
         Fields = new FlatBufferNode[vTable.FieldInfo.Length];
     }
 
+    /// <summary>
+    /// Gets the absolute off
+    /// </summary>
+    /// <param name="fieldIndex"></param>
+    /// <exception cref="ArgumentException"></exception>
     public int GetFieldOffset(int fieldIndex)
     {
         var fo = VTable.FieldInfo[fieldIndex];

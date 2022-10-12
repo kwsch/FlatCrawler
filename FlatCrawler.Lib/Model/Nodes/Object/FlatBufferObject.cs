@@ -3,6 +3,10 @@ using System.Diagnostics;
 
 namespace FlatCrawler.Lib;
 
+/// <summary>
+/// Node that contains a serialized schema object.
+/// </summary>
+/// <remarks>For an array (table), see <see cref="FlatBufferTable{T}"/></remarks>
 public sealed record FlatBufferObject : FlatBufferNodeField
 {
     public FBClass ObjectClass => (FBClass)FieldInfo.Type;

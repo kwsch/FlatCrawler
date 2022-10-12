@@ -4,12 +4,25 @@ using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace FlatCrawler.Lib;
 
+/// <summary>
+/// Node that contains a <see cref="Encoding.UTF8"/> String.
+/// </summary>
 public sealed record FlatBufferStringValue : FlatBufferNode
 {
     public override string TypeName { get => $"string ({Value})"; set { } }
+
+    /// <summary>
+    /// Absolute offset that has the raw string bytes.
+    /// </summary>
     public int StringOffset { get; }
+
+    /// <summary> Absolute offset that has the count of bytes of the string. </summary>
     public int StringLengthOffset { get; }
+
+    /// <summary> The length of the string in bytes. </summary>
     public int StringLength { get; }
+
+    /// <summary> The value of the string. </summary>
     public string Value { get; }
 
     public const int HeaderSize = sizeof(int);

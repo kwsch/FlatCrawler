@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace FlatCrawler.Lib;
 
 /// <summary>
-/// FlatBuffer node that can contain fields.
+/// FlatBuffer schema node that contains nodes at specific fields.
 /// </summary>
 public interface IFieldNode
 {

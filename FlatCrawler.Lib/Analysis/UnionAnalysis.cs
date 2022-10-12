@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace FlatCrawler.Lib;
 
+/// <summary>
+/// Analyzes union-type nodes with the same schema to determine the possible types of each union.
+/// </summary>
 public static class UnionAnalysis
 {
     public static UnionAnalysisResult AnalyzeUnion(this IArrayNode array, ReadOnlySpan<byte> data)

@@ -4,6 +4,13 @@ using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace FlatCrawler.Lib;
 
+/// <summary>
+/// Node that contains a serialized schema object.
+/// </summary>
+/// <remarks>
+/// Very similar to <see cref="FlatBufferObject"/>, except it can be prefixed by a magic file identifier.
+/// Usually is a unique schema to serve as an entry point for end users.
+/// </remarks>
 public sealed record FlatBufferRoot : FlatBufferNodeField
 {
     public const int HeaderSize = sizeof(int);

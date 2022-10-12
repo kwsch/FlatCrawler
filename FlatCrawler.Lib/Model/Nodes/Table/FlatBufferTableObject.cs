@@ -3,7 +3,9 @@ using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace FlatCrawler.Lib;
 
-// Object[] Ptr field type
+/// <summary>
+/// Node that contains a serialized schema object array.
+/// </summary>
 public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
 {
     public const int HeaderSize = 4;
@@ -36,13 +38,7 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         FieldInfo = new FBFieldInfo { Type = new FBClass(), IsArray = true };
     }
 
-    private void ReadArray(ReadOnlySpan<byte> data)
-    {
-        for (int i = 0; i < Entries.Length; i++)
-            Entries[i] = GetEntryAtIndex(data, i);
-    }
-
-    private FlatBufferObject GetEntryAtIndex(ReadOnlySpan<byte> data, int entryIndex)
+    protected override FlatBufferObject GetEntryAtIndex(ReadOnlySpan<byte> data, int entryIndex)
     {
         var arrayEntryPointerOffset = DataTableOffset + (entryIndex * EntrySize);
         var dataTablePointerShift = ReadInt32LittleEndian(data[arrayEntryPointerOffset..]);
@@ -56,6 +52,9 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         return entry;
     }
 
+    /// <summary>
+    /// Reads a new table node from the specified data.
+    /// </summary>
     public static FlatBufferTableObject Read(int offset, FlatBufferNode parent, int fieldIndex, ReadOnlySpan<byte> data)
     {
         int length = ReadInt32LittleEndian(data[offset..]);
@@ -84,5 +83,12 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         return node;
     }
 
+    /// <summary>
+    /// Reads a new table node from the specified data.
+    /// </summary>
+    /// <param name="parent">The parent node.</param>
+    /// <param name="fieldIndex">The index of the field in the parent node.</param>
+    /// <param name="data">The data to read from.</param>
+    /// <returns>New child node.</returns>
     public static FlatBufferTableObject Read(FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data) => Read(parent.GetReferenceOffset(fieldIndex, data), parent, fieldIndex, data);
 }
