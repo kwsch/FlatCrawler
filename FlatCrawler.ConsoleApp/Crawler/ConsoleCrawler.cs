@@ -66,6 +66,8 @@ public sealed class ConsoleCrawler
         _ => null,
     };
 
+    private const int CommandMaxLength = 20;
+
     private CrawlResult ProcessCommand(ReadOnlySpan<char> cmd, ref FlatBufferNode node, ReadOnlySpan<byte> data)
     {
         cmd = cmd.Trim();
@@ -75,16 +77,22 @@ public sealed class ConsoleCrawler
         var indexOfFirstSpace = cmd.IndexOf(' ');
         if (indexOfFirstSpace == -1)
         {
+            if (cmd.Length > CommandMaxLength)
+                return CrawlResult.Unrecognized;
+
             Span<char> lower = stackalloc char[cmd.Length];
             cmd.ToLowerInvariant(lower);
             return ProcessCommandSingle(lower, ref node, data);
         }
 
-        var tmp = cmd[..indexOfFirstSpace];
-        Span<char> cmdLower = stackalloc char[tmp.Length];
-        tmp.ToLowerInvariant(cmdLower);
+        if (indexOfFirstSpace > CommandMaxLength)
+            return CrawlResult.Unrecognized;
 
         var args = cmd[(indexOfFirstSpace + 1)..];
+        var cmdCased = cmd[..indexOfFirstSpace];
+        Span<char> cmdLower = stackalloc char[cmdCased.Length];
+        cmdCased.ToLowerInvariant(cmdLower);
+
         try
         {
             return ProcessCommand(cmdLower, args, ref node, data);

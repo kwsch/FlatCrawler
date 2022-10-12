@@ -9,6 +9,9 @@ public static class TypeCodeUtil
     public static (bool AsArray, TypeCode Type) GetTypeCodeTuple(ReadOnlySpan<char> text)
     {
         text = text.Trim();
+        if (text.Length > 20)
+            return (false, Unrecognized);
+
         bool asArray = false;
         if (text.EndsWith("[]", StringComparison.Ordinal))
         {
@@ -18,7 +21,11 @@ public static class TypeCodeUtil
 
         if (text.Equals("table", StringComparison.OrdinalIgnoreCase))
             return (true, TypeCode.Object);
-        return (asArray, GetTypeCode(text));
+
+        Span<char> tmp = stackalloc char[text.Length];
+        text.ToLowerInvariant(tmp);
+        var type = GetTypeCode(tmp);
+        return (asArray, type);
     }
 
     public static TypeCode GetTypeCode(ReadOnlySpan<char> type) => type switch
