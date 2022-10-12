@@ -5,7 +5,7 @@ using FlatCrawler.Lib;
 using FlatCrawler.Tests.Properties;
 using Xunit;
 
-namespace FlatCrawler.Sandbox;
+namespace FlatCrawler.Tests;
 
 public static class DumpPokeMemory
 {

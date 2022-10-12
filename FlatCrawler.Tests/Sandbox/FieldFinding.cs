@@ -2,17 +2,18 @@ using System.IO;
 using FlatCrawler.Lib;
 using Xunit;
 
-namespace FlatCrawler.Sandbox;
+namespace FlatCrawler.Tests;
 
 public static class FieldFinding
 {
+    private const string folder = @"D:\roms\sword_1.3.0\Dump\areas";
+
     /// <summary>
     /// Finds a FlatBuffer file that has a non-default value for the requested field.
     /// </summary>
     [Fact]
     public static void FindRootNodeWithField()
     {
-        const string folder = @"D:\roms\sword_1.3.0\Dump\areas";
         if (!Directory.Exists(folder))
             return;
 
@@ -31,7 +32,6 @@ public static class FieldFinding
     [Fact]
     public static void FindChildObjectWithField()
     {
-        const string folder = @"D:\roms\sword_1.3.0\Dump\areas";
         if (!Directory.Exists(folder))
             return;
 
@@ -55,7 +55,6 @@ public static class FieldFinding
     [Fact]
     public static void FindArrayEntryWithObjectWithField()
     {
-        const string folder = @"D:\roms\sword_1.3.0\Dump\areas";
         if (!Directory.Exists(folder))
             return;
 
