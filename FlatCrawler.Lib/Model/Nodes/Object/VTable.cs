@@ -57,16 +57,12 @@ public sealed class VTable
         DataTableLength = ReadInt16LittleEndian(data[SizeOfVTableLength..]);
         var fieldCount = (VTableLength - HeaderSize) / SizeOfField;
 
-        FieldInfo = new VTableFieldInfo[fieldCount];
-        ReadFieldInfo(data[HeaderSize..]);
-
-        if (FieldInfo.Any(z => z.HasValue && z.Offset >= DataTableLength))
-            throw new IndexOutOfRangeException("Field offset is beyond the data table's length.");
+        FieldInfo = ReadFieldInfo(data[HeaderSize..], fieldCount);
     }
 
-    private void ReadFieldInfo(ReadOnlySpan<byte> data)
+    private VTableFieldInfo[] ReadFieldInfo(ReadOnlySpan<byte> data, int fieldCount)
     {
-        int fieldCount = FieldInfo.Length;
+        var result = new VTableFieldInfo[fieldCount];
 
         // Store index and offset
         short[] offsets = new short[fieldCount];
@@ -74,28 +70,33 @@ public sealed class VTable
         {
             var ofs = ReadInt16LittleEndian(data[(i * SizeOfField)..]);
             offsets[i] = ofs;
-            FieldInfo[i] = new(i, ofs, 0);
+
+            var z = new VTableFieldInfo(i, ofs, 0);
+            if (z.HasValue && z.Offset >= DataTableLength)
+                throw new IndexOutOfRangeException("Field offset is beyond the data table's length.");
+            result[i] = z;
         }
 
+        UpdateSizes(result, result, DataTableLength);
+
+        return result;
+    }
+
+    private static void UpdateSizes(VTableFieldInfo[] ascendingIndex, VTableFieldInfo[] result, int end)
+    {
         // Loop in reverse order, starting at the table size
         // Field size would be Start byte - End byte.
         // Eg. 12 (table length) - 8 (offset) = size of 4 bytes
         // Next field would end at 8
 
         // Store index and offset in reverse order
-        var sortedFields = offsets
-            .Select((Offset, Index) => new { Offset, Index })
-            .Where(x => x.Offset != 0) // Zero offsets don't exist in the table so have no size
-            .OrderByDescending(z => z.Offset)
-            .ToArray();
-
-        int end = DataTableLength;
-        foreach (var f in sortedFields)
+        var sortedDescendingOffsets = ascendingIndex.GetOrderedList();
+        foreach ((int offset, int index) in sortedDescendingOffsets)
         {
-            var i = f.Index;
-            var start = f.Offset;
-            FieldInfo[i] = new(i, start, end - start);
-            end = start;
+            ref var exist = ref result[index];
+            var size = end - offset;
+            exist = exist with { Size = size };
+            end = offset;
         }
     }
 

@@ -1,6 +1,8 @@
+using System;
+
 namespace FlatCrawler.Lib;
 
-public record FBFieldInfo
+public record FBFieldInfo : IFieldOffset
 {
     public string Name { get; set; } = "???";
     public FBType Type { get; init; } = new();
@@ -16,8 +18,12 @@ public record FBFieldInfo
     /// </summary>
     public int Size { get; init; }
 
+    public bool HasValue => Offset != 0;
+
     public override string ToString()
     {
         return $"{Name} {{ Type: {Type.TypeName}{(IsArray ? "[]" : "")}, Size: {Size}, Offset: {Offset} }}";
     }
+
+    public bool HasShape(TypeCode type, bool asArray) => Type.Type == type && IsArray == asArray;
 }

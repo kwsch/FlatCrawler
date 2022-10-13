@@ -7,7 +7,7 @@ namespace FlatCrawler.Lib;
 /// <summary>
 /// Draft file object
 /// </summary>
-public class FlatBufferFile
+public sealed class FlatBufferFile
 {
     // Data should never overlap with any of the data ranges in this set
     public readonly SortedSet<DataRange> ProtectedDataRanges = new();
@@ -17,14 +17,10 @@ public class FlatBufferFile
     private byte[] _data { get; } = Array.Empty<byte>();
     public ReadOnlySpan<byte> Data => _data;
 
-    public bool IsValid => Data.Length >= 8;
+    public bool IsValid => GetIsSizeValid(Data);
 
-    public FlatBufferFile() { }
-
-    public FlatBufferFile(string path)
-    {
-        _data = File.ReadAllBytes(path);
-    }
+    public FlatBufferFile(string path) : this(File.ReadAllBytes(path)) { }
+    public FlatBufferFile(byte[] data) => _data = data;
 
     /// <summary>
     /// Read the VTable at <paramref name="offset"/>.
@@ -41,4 +37,6 @@ public class FlatBufferFile
         VTables.Add(vtable.Location, vtable);
         return vtable;
     }
+
+    public static bool GetIsSizeValid(ReadOnlySpan<byte> data) => data.Length >= 8;
 }

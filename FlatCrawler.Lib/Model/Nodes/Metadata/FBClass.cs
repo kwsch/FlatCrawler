@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace FlatCrawler.Lib;
 
@@ -33,17 +32,15 @@ public sealed record FBClass() : FBType(TypeCode.Object)
 
     public void SetMemberType(int memberIndex, ReadOnlySpan<byte> data, TypeCode type, bool asArray = false)
     {
-        var member = _members[memberIndex];
+        ref var member = ref _members[memberIndex];
         var oldType = member.Type;
-        if (oldType.Type == type && member.IsArray == asArray)
-            return;
+        if (member.HasShape(type, asArray))
+            return; // already the requested type, no modification needed
 
         if (type == TypeCode.Object)
-            member = (member with { Type = new FBClass(), IsArray = asArray });
+            member = member with { IsArray = asArray, Type = new FBClass() };
         else
-            member = (member with { Type = new FBType(type), IsArray = asArray });
-
-        _members[memberIndex] = member;
+            member = member with { IsArray = asArray, Type = new FBType(type) };
 
         OnMemberTypeChanged(new(memberIndex, data.ToArray(), member, oldType, member.Type));
     }
@@ -79,13 +76,14 @@ public sealed record FBClass() : FBType(TypeCode.Object)
     {
         // Overwrite any zero offsets
         var fi = vtable.FieldInfo;
-        for (int i = 0; i < fi.Length; ++i)
+        for (int i = fi.Length - 1; i >= 0; --i)
         {
-            var member = _members[i];
-            if (member.Offset != 0)
+            ref var member = ref _members[i];
+            if (member.HasValue)
                 continue;
 
-            _members[i] = member with { Offset = fi[i].Offset };
+            var offset = fi[i].Offset;
+            member = member with { Offset = offset };
         }
     }
 
@@ -102,24 +100,19 @@ public sealed record FBClass() : FBType(TypeCode.Object)
         // Next field would end at 8
 
         // Store index and offset in reverse order
-        var sortedFields = _members
-            .Select((x, Index) => new { x.Offset, Index })
-            .Where(x => x.Offset != 0) // Zero offsets don't exist in the table so have no size
-            .OrderByDescending(z => z.Offset)
-            .ToArray();
+        var sortedFields = _members.GetOrderedList();
 
         int end = Size;
-        foreach (var f in sortedFields)
+        foreach ((int offset, int index) in sortedFields)
         {
-            ref var member = ref _members[f.Index];
+            ref var exist = ref _members[index];
 
-            var start = f.Offset;
-            var delta = end - start;
-            if (member.Size != delta)
+            var size = end - offset;
+            if (exist.Size != size)
                 Debug.WriteLine("Found a size that was incorrectly calculated in the VTable. Should probably update it there too.");
 
-            member = member with { Size = delta };
-            end = start;
+            exist = exist with { Size = size };
+            end = offset;
         }
     }
 

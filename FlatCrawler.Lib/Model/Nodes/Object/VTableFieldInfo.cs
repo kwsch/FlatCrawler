@@ -9,11 +9,7 @@ namespace FlatCrawler.Lib;
 /// How many bytes are allocated to store the field's serialized value.
 /// NOTE: this is derived on object construction based on the amount of data remaining, and isn't precise.
 /// </param>
-public sealed record VTableFieldInfo(int Index, int Offset, int Size)
+public sealed record VTableFieldInfo(int Index, int Offset, int Size) : IFieldOffset
 {
-    /// <summary>
-    /// The field has a value stored in the buffer if the offset is greater than 0.
-    /// Zero valued offsets are used to indicate that the field is not present.
-    /// </summary>
     public bool HasValue => Offset != 0;
 }
