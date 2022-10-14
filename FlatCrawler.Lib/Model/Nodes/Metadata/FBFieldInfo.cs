@@ -11,6 +11,7 @@ public record FBFieldInfo : IFieldOffset
     /// <summary>
     /// The offset in the data table. Field value is located at <see cref="FlatBufferNodeField.DataTableOffset"/> + Offset.
     /// </summary>
+    [Obsolete("You can't store this as this can change for every VTable")]
     public int Offset { get; init; }
 
     /// <summary>

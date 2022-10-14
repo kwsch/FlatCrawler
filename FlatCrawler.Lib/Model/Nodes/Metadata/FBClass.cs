@@ -15,21 +15,6 @@ public sealed record FBClass() : FBType(TypeCode.Object)
 
     private readonly SortedDictionary<int, VTable> AssociatedVTables = new();
 
-    public int GetMemberIndex(int offset)
-    {
-        if (offset == 0)
-            throw new ArgumentOutOfRangeException(nameof(offset), offset, "Value of 0 for offset is not valid (Default Value)");
-
-        var index = Array.FindIndex(_members, z => z.Offset == offset);
-        if (index == -1)
-            throw new ArgumentOutOfRangeException(nameof(offset), offset, "Unable to find the member index with that offset.");
-        var last = Array.FindLastIndex(_members, z => z.Offset == offset);
-        if (last != index)
-            throw new ArgumentOutOfRangeException(nameof(offset), offset, $"More than one member has that offset: {index}, {last}");
-
-        return index;
-    }
-
     public void SetMemberType(int memberIndex, ReadOnlySpan<byte> data, TypeCode type, bool asArray = false)
     {
         ref var member = ref _members[memberIndex];
@@ -51,6 +36,24 @@ public sealed record FBClass() : FBType(TypeCode.Object)
             return;
 
         AssociatedVTables.Add(vtable.Location, vtable);
+
+        // We can't map to VTable offsets here, as each VTable can point to different offsets.
+        // The only guarantee we have is that they map to the correct field id
+        // A table field id maps to a vtable field id using the formula
+        // sizeof(ushort) * (field-id + 2)
+
+        // The class size is the vtable with the largest object size
+        // Object size is calculated by taking the data table size and subtracting the offset of the first field [0] if not 0
+
+        // The amount of class members is equal to the vtable with the largest field count
+
+        // Field sizes are known unless a field between two known fields has a default value
+        // This can be resolved by taking the vtable that calculated the smallest size for the field
+
+        // TODO: Fix this later, don't have time right now :)
+
+        // var objectSize = vtable.DataTableLength - vtable.FieldInfo[0].Offset;
+        // var maxFields = 0;
 
         // Append members until count matches vtable field count
         var info = vtable.FieldInfo;
