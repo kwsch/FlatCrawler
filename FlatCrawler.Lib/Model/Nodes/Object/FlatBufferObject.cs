@@ -7,7 +7,7 @@ namespace FlatCrawler.Lib;
 /// Node that contains a serialized schema object.
 /// </summary>
 /// <remarks>For an array (table), see <see cref="FlatBufferTable{T}"/></remarks>
-public sealed record FlatBufferObject : FlatBufferNodeField
+public sealed record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
 {
     public FBClass ObjectClass => (FBClass)FieldInfo.Type;
 
@@ -54,8 +54,7 @@ public sealed record FlatBufferObject : FlatBufferNodeField
 
         Fields = new FlatBufferNode[ObjectClass.Members.Count];
 
-        ObjectClass.MemberTypeChanged += OnMemberTypeChanged;
-        ObjectClass.MemberCountChanged += OnMemberCountChanged;
+        ObjectClass.Observers.Add(this);
     }
 
     /// <summary>
@@ -63,16 +62,19 @@ public sealed record FlatBufferObject : FlatBufferNodeField
     /// </summary>
     private void UnRegisterObjectClass()
     {
-        ObjectClass.MemberTypeChanged -= OnMemberTypeChanged;
-        ObjectClass.MemberCountChanged -= OnMemberCountChanged;
+        ObjectClass.Observers.Remove(this);
     }
 
-    private void OnMemberCountChanged(object? sender, int e)
+    public void OnMemberCountChanged(int count)
     {
-        Fields = new FlatBufferNode[e];
+        if (Fields.Length == count)
+            return;
+        var tmp = new FlatBufferNode[count];
+        Fields.CopyTo(tmp, 0);
+        Fields = tmp;
     }
 
-    private void OnMemberTypeChanged(object? sender, MemberTypeChangedArgs e)
+    public void OnMemberTypeChanged(MemberTypeChangedArgs e)
     {
         Debug.WriteLine($"Changing Member Type: {e.MemberIndex} {e.OldType} -> {e.NewType}");
         if (HasField(e.MemberIndex))

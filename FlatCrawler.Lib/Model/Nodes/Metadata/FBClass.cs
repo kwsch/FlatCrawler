@@ -6,8 +6,7 @@ namespace FlatCrawler.Lib;
 
 public sealed record FBClass() : FBType(TypeCode.Object)
 {
-    public event EventHandler<MemberTypeChangedArgs>? MemberTypeChanged;
-    public event EventHandler<int>? MemberCountChanged;
+    public readonly List<ISchemaObserver> Observers = new();
 
     private FBFieldInfo[] _members = Array.Empty<FBFieldInfo>();
 
@@ -27,14 +26,14 @@ public sealed record FBClass() : FBType(TypeCode.Object)
         else
             member = member with { IsArray = asArray, Type = new FBType(type) };
 
-        OnMemberTypeChanged(new(memberIndex, data.ToArray(), member, oldType, member.Type));
+        OnMemberTypeChanged(new(memberIndex, data, member, oldType, member.Type));
     }
 
     public ClassUpdateResult AssociateVTable(VTable vtable)
     {
-        ClassUpdateResult result = ClassUpdateResult.None;
+        ClassUpdateResult result = 0;
         if (AssociatedVTables.ContainsKey(vtable.Location))
-            return result;
+            return ClassUpdateResult.None;
 
         AssociatedVTables.Add(vtable.Location, vtable);
 
@@ -62,7 +61,7 @@ public sealed record FBClass() : FBType(TypeCode.Object)
         {
             var newMembers = new FBFieldInfo[info.Length];
             _members.CopyTo(newMembers, 0);
-            for (int i = _members.Length; i < info.Length; ++i)
+            for (int i = info.Length; i < info.Length; i++)
             {
                 var field = info[i];
                 newMembers[i] = new FBFieldInfo { Size = field.Size };
@@ -124,13 +123,21 @@ public sealed record FBClass() : FBType(TypeCode.Object)
 
     private void OnMemberTypeChanged(MemberTypeChangedArgs args)
     {
-        MemberTypeChanged?.Invoke(this, args);
+        foreach (var subscriber in Observers)
+            subscriber.OnMemberTypeChanged(args);
     }
 
     private void OnMemberCountChanged()
     {
-        MemberCountChanged?.Invoke(this, Members.Count);
+        foreach (var subscriber in Observers)
+            subscriber.OnMemberCountChanged(Members.Count);
     }
+}
+
+public interface ISchemaObserver
+{
+    void OnMemberTypeChanged(MemberTypeChangedArgs args);
+    void OnMemberCountChanged(int count);
 }
 
 [Flags]
