@@ -2,7 +2,7 @@ using System;
 
 namespace FlatCrawler.Lib;
 
-public record FieldSizeTracker(int Min, int Max, bool IsUncertain)
+public sealed record FieldSizeTracker(int Min, int Max, bool IsUncertain)
 {
     public int Min { get; private set; } = Min;
     public int Max { get; private set; } = Max;

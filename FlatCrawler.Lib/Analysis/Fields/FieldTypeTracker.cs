@@ -3,7 +3,7 @@ using System.Text;
 
 namespace FlatCrawler.Lib;
 
-public record FieldTypeTracker
+public sealed record FieldTypeTracker
 {
     public FieldType Type { get; private set; } = FieldType.Unknown;
     public uint Single { get; private set; }

@@ -30,10 +30,11 @@ public sealed record FBClass() : FBType(TypeCode.Object)
         OnMemberTypeChanged(new(memberIndex, data.ToArray(), member, oldType, member.Type));
     }
 
-    public void AssociateVTable(VTable vtable)
+    public ClassUpdateResult AssociateVTable(VTable vtable)
     {
+        ClassUpdateResult result = ClassUpdateResult.None;
         if (AssociatedVTables.ContainsKey(vtable.Location))
-            return;
+            return result;
 
         AssociatedVTables.Add(vtable.Location, vtable);
 
@@ -64,36 +65,27 @@ public sealed record FBClass() : FBType(TypeCode.Object)
             for (int i = _members.Length; i < info.Length; ++i)
             {
                 var field = info[i];
-                newMembers[i] = new FBFieldInfo { Offset = field.Offset, Size = field.Size };
+                newMembers[i] = new FBFieldInfo { Size = field.Size };
             }
             _members = newMembers;
-
+            result |= ClassUpdateResult.UpdatedCount;
             OnMemberCountChanged();
         }
 
-        UpdateOffsets(vtable);
-        UpdateSizes(vtable);
+        result |= UpdateSizes(vtable);
+        return result;
     }
 
-    private void UpdateOffsets(VTable vtable)
+    private ClassUpdateResult UpdateSizes(VTable vtable)
     {
-        // Overwrite any zero offsets
-        var fi = vtable.FieldInfo;
-        for (int i = fi.Length - 1; i >= 0; --i)
-        {
-            ref var member = ref _members[i];
-            if (member.HasValue)
-                continue;
+        ClassUpdateResult result = 0;
 
-            var offset = fi[i].Offset;
-            member = member with { Offset = offset };
-        }
-    }
-
-    private void UpdateSizes(VTable vtable)
-    {
         // Update type size
-        Size = Math.Max(Size, vtable.DataTableLength);
+        if (Size < vtable.DataTableLength)
+        {
+            Size = vtable.DataTableLength;
+            result |= ClassUpdateResult.UpdatedSelfTotal;
+        }
 
         // Code below is mainly there for verification of VTable sizes
 
@@ -103,20 +95,31 @@ public sealed record FBClass() : FBType(TypeCode.Object)
         // Next field would end at 8
 
         // Store index and offset in reverse order
-        var sortedFields = _members.GetOrderedList();
+        var sortedFields = vtable.FieldInfo.GetOrderedList();
 
         int end = Size;
         foreach ((int offset, int index) in sortedFields)
         {
-            ref var exist = ref _members[index];
+            ref var member = ref _members[index];
 
             var size = end - offset;
-            if (exist.Size != size)
-                Debug.WriteLine("Found a size that was incorrectly calculated in the VTable. Should probably update it there too.");
-
-            exist = exist with { Size = size };
+            if (member.Size > size)
+            {
+                // update our size
+                Debug.WriteLine($"Found a size for field {index} that is smaller in the provided VTable. Updating class info.");
+                member = member with { Size = size };
+                result |= ClassUpdateResult.UpdatedSelf;
+            }
+            else if (member.Size < size)
+            {
+                // Update VTable size
+                Debug.WriteLine($"Class info for field {index} is smaller than the provided VTable. Updating VTable size.");
+                vtable.FieldInfo[index] = vtable.FieldInfo[index] with { Size = size };
+                result |= ClassUpdateResult.UpdatedVTable;
+            }
             end = offset;
         }
+        return result;
     }
 
     private void OnMemberTypeChanged(MemberTypeChangedArgs args)
@@ -128,4 +131,14 @@ public sealed record FBClass() : FBType(TypeCode.Object)
     {
         MemberCountChanged?.Invoke(this, Members.Count);
     }
+}
+
+[Flags]
+public enum ClassUpdateResult
+{
+    None = 0,
+    UpdatedCount = 1 << 0,
+    UpdatedSelfTotal = 1 << 1,
+    UpdatedSelf = 1 << 2,
+    UpdatedVTable = 1 << 3,
 }
