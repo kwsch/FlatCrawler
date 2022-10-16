@@ -61,7 +61,7 @@ public sealed record FBClass() : FBType(TypeCode.Object)
         {
             var newMembers = new FBFieldInfo[info.Length];
             _members.CopyTo(newMembers, 0);
-            for (int i = info.Length; i < info.Length; i++)
+            for (int i = _members.Length; i < info.Length; i++)
             {
                 var field = info[i];
                 newMembers[i] = new FBFieldInfo { Size = field.Size };
