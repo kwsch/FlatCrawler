@@ -9,6 +9,8 @@ namespace FlatCrawler.Lib;
 public sealed record FlatBufferTableString : FlatBufferTable<FlatBufferStringValue>
 {
     public override string TypeName { get => "string[]"; set { } }
+    public bool IsReadable => Array.TrueForAll(Entries, x => x.IsReadable);
+
     public override FlatBufferNode GetEntry(int entryIndex) => Entries[entryIndex];
 
     private FlatBufferTableString(int offset, int length, FlatBufferNode parent, int dataTableOffset) : base(offset, parent, length, dataTableOffset)

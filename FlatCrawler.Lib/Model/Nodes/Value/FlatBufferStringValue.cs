@@ -25,6 +25,19 @@ public sealed record FlatBufferStringValue : FlatBufferNode
     /// <summary> The value of the string. </summary>
     public string Value { get; }
 
+    public bool IsReadable
+    {
+        get
+        {
+            foreach (var c in Value)
+            {
+                if (char.IsControl(c))
+                    return false;
+            }
+            return true;
+        }
+    }
+
     public const int HeaderSize = sizeof(int);
     public const int NullTerminatorSize = sizeof(byte);
 
