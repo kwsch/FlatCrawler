@@ -18,4 +18,5 @@ public sealed class FieldObservations
 
     public string Summary() => $"{{{Size.Summary()}}} {Type.Summary()}";
     public string Summary(FlatBufferNodeField node, int index, ReadOnlySpan<byte> data) => $"{{{Size.Summary()}}} {Type.Summary(node, index, data)}";
+    public override int GetHashCode() => Type.GetHashCode();
 }

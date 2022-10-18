@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using FlatCrawler.Lib;
 
 namespace FlatCrawler.ConsoleApp;
 
@@ -25,6 +26,16 @@ internal static class Program
             if (x.StartsWith("quit", StringComparison.InvariantCultureIgnoreCase))
                 break;
 
+            const string rip = "rip";
+            if (x.StartsWith(rip, StringComparison.InvariantCultureIgnoreCase))
+            {
+                Console.WriteLine("Ripping...");
+                var src = GetFileNameFromCommandLineInput(x[(rip.Length + 1)..].Trim());
+                FileAnalysis.IterateAndDump(src);
+                Console.WriteLine("Done.");
+                continue;
+            }
+
             if (!x.StartsWith("open", StringComparison.InvariantCultureIgnoreCase))
             {
                 Console.WriteLine("Try again.");
@@ -37,15 +48,17 @@ internal static class Program
         }
     }
 
+    private static string GetFileNameFromCommandLineInput(string path) => Path.TrimEndingDirectorySeparator(path.Replace("\"", ""));
+
     private static void Crawl(string path)
     {
-        path = Path.TrimEndingDirectorySeparator(path.Replace("\"", ""));
+        path = GetFileNameFromCommandLineInput(path);
         if (!File.Exists(path))
         {
             Console.WriteLine("File does not exist.");
             return;
         }
-        var file = new Lib.FlatBufferFile(path);
+        var file = new FlatBufferFile(path);
         if (!file.IsValid)
         {
             Console.WriteLine("Not a valid flat buffer file.");
