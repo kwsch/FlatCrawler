@@ -70,7 +70,7 @@ public sealed record FieldTypeTracker
             }
             if ((Array & mask) != 0)
             {
-                if (TryRead(entry, index, data, type) == 0)
+                if (TryReadTable(entry, index, data, type) == 0)
                     Array &= ~mask;
             }
         }
@@ -102,8 +102,12 @@ public sealed record FieldTypeTracker
     {
         try
         {
-            _ = entry.ReadArrayAs(data, index, type);
-            return 1u << (int)type;
+            var child = entry.ReadArrayAs(data, index, type);
+            return child switch
+            {
+                FlatBufferTableString { IsReadable: false } => 0,
+                _ => 1u << (int)type,
+            };
         }
         catch
         {
@@ -127,8 +131,12 @@ public sealed record FieldTypeTracker
     {
         try
         {
-            _ = entry.ReadAs(data, index, type);
-            return 1u << (int)type;
+            var child = entry.ReadAs(data, index, type);
+            return child switch
+            {
+                FlatBufferStringValue { IsReadable: false } => 0,
+                _ => 1u << (int)type,
+            };
         }
         catch
         {
