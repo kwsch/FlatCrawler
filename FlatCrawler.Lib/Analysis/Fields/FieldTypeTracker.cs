@@ -36,9 +36,9 @@ public sealed record FieldTypeTracker
         }
         if (Type.HasFlagFast(FieldType.StructArray))
         {
-            foreach (var (type, size) in Structs)
+            foreach (var (type, _) in Structs)
             {
-                if (sizes.IsPlausible(size))
+                if (sizes.IsPlausible(4))
                     Array |= TryReadTable(entry, index, data, type);
             }
         }
@@ -102,6 +102,10 @@ public sealed record FieldTypeTracker
     {
         try
         {
+            var sizeCheck = entry.PeekArraySize(data, index, type);
+            if ((ulong)sizeCheck >= (ulong)data.Length)
+                return 0;
+
             var child = entry.ReadArrayAs(data, index, type);
             return child switch
             {

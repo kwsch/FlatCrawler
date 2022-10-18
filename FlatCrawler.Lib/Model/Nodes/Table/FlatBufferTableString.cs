@@ -34,13 +34,19 @@ public sealed record FlatBufferTableString : FlatBufferTable<FlatBufferStringVal
         return result;
     }
 
+    public static int GetSize(int length) => length * (sizeof(int) + sizeof(int)); // bare minimum rough guess: ptr, len
+
     /// <summary>
     /// Reads a new table node from the specified data.
     /// </summary>
     public static FlatBufferTableString Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data)
     {
         int length = ReadInt32LittleEndian(data[offset..]);
-        var node = new FlatBufferTableString(offset, length, parent, offset + 4);
+        var dataTableOffset = offset + 4;
+        if (GetSize(length) > data.Length - dataTableOffset)
+            throw new ArgumentException("The specified data is too short to contain the specified array.", nameof(data));
+
+        var node = new FlatBufferTableString(offset, length, parent, dataTableOffset);
         node.ReadArray(data);
         return node;
     }

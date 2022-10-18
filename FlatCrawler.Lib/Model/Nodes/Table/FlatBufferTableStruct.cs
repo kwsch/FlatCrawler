@@ -44,13 +44,28 @@ public sealed record FlatBufferTableStruct<T> : FlatBufferTable<FlatBufferFieldV
     /// <returns>The node at the specified index.</returns>
     public override FlatBufferNode GetEntry(int entryIndex) => Entries[entryIndex];
 
+    public static long GetSize(long length) => length * Marshal.SizeOf<T>();
+
+    public static long PeekSize(FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data)
+    {
+        var offset = parent.GetReferenceOffset(fieldIndex, data);
+        if (offset % 4 != 0)
+            return long.MaxValue;
+        var length = ReadInt32LittleEndian(data[offset..]);
+        return GetSize(length);
+    }
+
     /// <summary>
     /// Reads a new table node from the specified data.
     /// </summary>
     public static FlatBufferTableStruct<T> Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data, TypeCode type)
     {
         int length = ReadInt32LittleEndian(data[offset..]);
-        var node = new FlatBufferTableStruct<T>(offset, length, parent, offset + 4, type);
+        var dataTableOffset = offset + 4;
+        if (GetSize(length) > data.Length - dataTableOffset)
+            throw new ArgumentException("The specified data is too short to contain the specified array.", nameof(data));
+
+        var node = new FlatBufferTableStruct<T>(offset, length, parent, dataTableOffset, type);
         node.ReadArray(data);
         return node;
     }

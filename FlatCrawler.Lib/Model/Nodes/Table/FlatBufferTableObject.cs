@@ -52,13 +52,19 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         return entry;
     }
 
+    public static int GetSize(int length) => length * (EntrySize + sizeof(int)); // bare minimum rough guess, considering vtable
+
     /// <summary>
     /// Reads a new table node from the specified data.
     /// </summary>
     public static FlatBufferTableObject Read(int offset, FlatBufferNode parent, int fieldIndex, ReadOnlySpan<byte> data)
     {
         int length = ReadInt32LittleEndian(data[offset..]);
-        var node = new FlatBufferTableObject(offset, length, parent, offset + HeaderSize);
+        var dataTableOffset = offset + HeaderSize;
+        if (GetSize(length) > data.Length - dataTableOffset)
+            throw new ArgumentException("The specified data is too short to contain the specified array.", nameof(data));
+
+        var node = new FlatBufferTableObject(offset, length, parent, dataTableOffset);
         node.ReadArray(data);
 
         // If this table is part of another table, link the ObjectTypes (class) reference

@@ -137,6 +137,10 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
         where T : struct
         => FlatBufferTableStruct<T>.Read(this, fieldIndex, data, Type.GetTypeCode(typeof(T)));
 
+    public long PeekArrayAs<T>(ReadOnlySpan<byte> data, int fieldIndex)
+        where T : struct
+        => FlatBufferTableStruct<T>.PeekSize(this, fieldIndex, data);
+
     public FlatBufferNode ReadArrayAs(ReadOnlySpan<byte> data, int fieldIndex, TypeCode type) => type switch
     {
 #pragma warning disable format
@@ -160,4 +164,40 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
 #pragma warning restore format
         _ => throw new ArgumentOutOfRangeException(nameof(type)),
     };
+
+    public long PeekArraySize(ReadOnlySpan<byte> data, int fieldIndex, TypeCode type) => type switch
+    {
+#pragma warning disable format
+        TypeCode.Boolean => PeekArrayAs<bool  >(data, fieldIndex),
+
+        TypeCode.SByte   => PeekArrayAs<sbyte >(data, fieldIndex),
+        TypeCode.Int16   => PeekArrayAs<short >(data, fieldIndex),
+        TypeCode.Int32   => PeekArrayAs<int   >(data, fieldIndex),
+        TypeCode.Int64   => PeekArrayAs<long  >(data, fieldIndex),
+
+        TypeCode.Byte    => PeekArrayAs<byte  >(data, fieldIndex),
+        TypeCode.UInt16  => PeekArrayAs<ushort>(data, fieldIndex),
+        TypeCode.UInt32  => PeekArrayAs<uint  >(data, fieldIndex),
+        TypeCode.UInt64  => PeekArrayAs<ulong >(data, fieldIndex),
+
+        TypeCode.Single  => PeekArrayAs<float >(data, fieldIndex),
+        TypeCode.Double  => PeekArrayAs<double>(data, fieldIndex),
+
+        TypeCode.String  => PeekArrayObject(data, fieldIndex),
+        TypeCode.Object  => PeekArrayObject(data, fieldIndex),
+
+#pragma warning restore format
+        _ => throw new ArgumentOutOfRangeException(nameof(type)),
+    };
+
+    public long PeekArrayObject(ReadOnlySpan<byte> data, int fieldIndex)
+    {
+        var offset = GetReferenceOffset(fieldIndex, data);
+        if (offset % 4 != 0)
+            return long.MaxValue;
+        var length = ReadInt32LittleEndian(data[offset..]);
+
+        const long size = sizeof(int) + sizeof(int); // ptr + len; assume 0 len str as minimum
+        return length * size;
+    }
 }
