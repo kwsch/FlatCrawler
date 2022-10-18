@@ -89,9 +89,16 @@ public sealed class FieldAnalysisResult
             field.Observe(entry, index, data);
     }
 
-    public void ScanFieldType(IEnumerable<FlatBufferNodeField> nodes, ReadOnlySpan<byte> data)
+    public void ScanFieldType(IReadOnlyCollection<FlatBufferNodeField> nodes, ReadOnlySpan<byte> data)
     {
         foreach (var entry in nodes)
             ScanFieldType(entry, data);
+
+        // If we only have one node, we didn't do subsequent checks. Trigger again.
+        if (nodes.Count == 1)
+        {
+            foreach (var entry in nodes)
+                ScanFieldType(entry, data);
+        }
     }
 }
