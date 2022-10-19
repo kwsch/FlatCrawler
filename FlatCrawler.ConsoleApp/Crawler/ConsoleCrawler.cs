@@ -247,6 +247,14 @@ public sealed class ConsoleCrawler
                 DumpHex(data, offset);
                 return CrawlResult.Silent;
             }
+
+            case "fnv" or "hash":
+            {
+                var hashCode = FnvHash.HashFnv1a_64(args);
+                Console.WriteLine($"Fnv1a_64 hash of {args} is: 0x{hashCode:X} (Uint64 {hashCode})");
+                return CrawlResult.Silent;
+            }
+
             default:
                 return CrawlResult.Unrecognized;
         }
