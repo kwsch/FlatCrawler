@@ -5,8 +5,19 @@ using System.Linq;
 
 namespace FlatCrawler.Lib;
 
+/// <summary>
+/// Logic to iterate through multiple FlatBuffer files and log their potential schemas.
+/// </summary>
 public static class FileAnalysis
 {
+    /// <summary>
+    /// Iterates through all files in the specified directory and analyzes the specified nodes.
+    /// </summary>
+    /// <param name="path">Directory to search for files.</param>
+    /// <param name="dest">
+    /// Destination directory to save the results.
+    /// If none specified, the results will be saved in the same directory as the executable.
+    /// </param>
     public static void IterateAndDump(string path, string dest = "")
     {
         if (string.IsNullOrEmpty(dest))
@@ -17,15 +28,18 @@ public static class FileAnalysis
             dest = Path.Combine(dir ?? string.Empty, "FlatAnalysis");
         }
 
-        if (!Directory.Exists(dest))
-            Directory.CreateDirectory(dest);
-
         var settings = new FileAnalysisSettings(path, dest);
         IterateAndDump(settings);
     }
 
+    /// <inheritdoc cref="IterateAndDump(string,string)"></inheritdoc>
     public static void IterateAndDump(FileAnalysisSettings settings)
     {
+        // Ensure the destination directory exists for the output.
+        var dest = settings.OutputPath;
+        if (!Directory.Exists(dest))
+            Directory.CreateDirectory(dest);
+
         var files = Directory.EnumerateFiles(settings.InputPath, "*.*", SearchOption.AllDirectories);
 
         Span<byte> buffer = new byte[settings.MaxPeekSize].AsSpan();
@@ -33,6 +47,13 @@ public static class FileAnalysis
 
         foreach (var file in files)
         {
+            if (settings.SkipAnalysisIfSchemaDumpExists)
+            {
+                var outPath = settings.GetOutputPath(file);
+                if (File.Exists(outPath))
+                    continue;
+            }
+
             try
             {
                 bool result = TryAnalyzeFile(settings, file, results, buffer);
@@ -46,7 +67,7 @@ public static class FileAnalysis
         }
 
         // Dump the results to a file.
-        var outputResultsPath = Path.Combine(settings.OutputPath, settings.OutputFileName);
+        var outputResultsPath = Path.Combine(settings.OutputPath, settings.AllResultOutputFileName);
         ExportMetadata(results, outputResultsPath);
     }
 
@@ -106,32 +127,40 @@ public static class FileAnalysis
         return true;
     }
 
+    /// <summary>
+    /// Dumps the analysis of a FlatBuffer file to a text file for later viewing.
+    /// </summary>
+    /// <param name="settings">The settings to use for the analysis.</param>
+    /// <param name="file">The path to the file that was analyzed.</param>
+    /// <param name="analysis">The analysis of the file.</param>
+    /// <param name="node">The node that served as the root for analysis.</param>
+    /// <param name="data">The data that was analyzed.</param>
+    /// <returns>Summary object of the analysis.</returns>
     private static FileAnalysisResult DumpFile(FileAnalysisSettings settings, string file, FieldAnalysisResult analysis, FlatBufferNodeField node, ReadOnlySpan<byte> data)
     {
-        var fileName = Path.GetFileName(file);
-        var outputPath = Path.Combine(settings.OutputPath, $"{fileName}.txt");
-        using var sw = File.CreateText(outputPath);
-
         // Create a unique hash based on the field data.
         var hash = 0;
-
         var ordered = analysis.Fields.OrderBy(z => z.Key);
-        foreach (var (index, obs) in ordered)
+        if (settings.DumpIndividualSchemaAnalysis)
         {
-            var line = $"[{index}] {obs.Summary(node, index, data)}";
-            sw.WriteLine(line);
-            hash = HashCode.Combine(hash, obs.GetHashCode());
+            var outputPath = settings.GetOutputPath(file);
+            using var sw = File.CreateText(outputPath);
+
+            foreach (var (index, obs) in ordered)
+            {
+                var line = $"[{index}] {obs.Summary(node, index, data)}";
+                sw.WriteLine(line);
+                hash = HashCode.Combine(hash, obs.GetHashCode());
+            }
+        }
+        else
+        {
+            foreach (var (_, obs) in ordered)
+                hash = HashCode.Combine(hash, obs.GetHashCode());
         }
 
         // Return the file analysis result.
+        var fileName = Path.GetFileName(file);
         return new(node.FieldCount, hash, fileName, file);
     }
 }
-
-public sealed record FileAnalysisSettings(string InputPath, string OutputPath)
-{
-    public string OutputFileName { get; init; } = "AllFlatBufferMetadata.txt";
-    public int MaxPeekSize { get; init; } = 5 * 1024 * 1024; // 10 MB
-}
-
-public sealed record FileAnalysisResult(int FieldCount, int Hash, string FileName, string Path);

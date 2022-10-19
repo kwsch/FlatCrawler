@@ -3,19 +3,49 @@ using System.Text;
 
 namespace FlatCrawler.Lib;
 
+/// <summary>
+/// Tracks the possible types of a field.
+/// </summary>
 public sealed record FieldTypeTracker
 {
-    public FieldType Type { get; private set; } = FieldType.Unknown;
+    /// <summary> Potential field type groupings. </summary>
+    private FieldType Type { get; set; } = FieldType.Unknown;
+
+    /// <summary> Tracks how many times the field has been observed from a provided <see cref="FlatBufferNodeField"/>. </summary>
+    public int Observations { get; private set; }
+
+    /// <summary> Packed bits of <see cref="TypeCode"/> values (flags), indicating if the field can be interpreted as a single value (not array) with that type. </summary>
     public uint Single { get; private set; }
+
+    /// <summary> Packed bits of <see cref="TypeCode"/> values (flags), indicating if the field can be interpreted as an array with that type. </summary>
     public uint Array { get; private set; }
 
-    private bool FirstPass { get; set; } = true;
+    /// <summary> Indicates that the field can potentially be interpreted as an <see cref="FlatBufferObject"/>. </summary>
+    public bool IsPotentialObject => (Single & (1u << (int)TypeCode.Object)) != 0;
 
+    /// <summary> Indicates that the field can be potentially interpreted as an <see cref="FlatBufferTableObject"/> </summary>
+    public bool IsPotentialObjectArray => (Array & (1u << (int)TypeCode.Object)) != 0;
+
+    /// <summary>
+    /// Indicates if the field's type can be one of any of the recognized types.
+    /// </summary>
+    public bool IsRecognized => Single != 0 || Array != 0;
+
+    /// <summary>
+    /// Determines the overall <see cref="FieldType"/> values the field could potentially be, before attempting to interpret.
+    /// </summary>
+    /// <param name="size"></param>
     public void PreCheck(FieldSizeTracker size) => Type = size.GuessOverallType();
 
+    /// <summary>
+    /// Attempts to interpret the field, and removes all type flags that are not compatible with the interpretation.
+    /// </summary>
     public void Observe(FlatBufferNodeField entry, int index, ReadOnlySpan<byte> data, FieldSizeTracker sizes)
     {
-        if (FirstPass)
+        // If this is our first time looking at the node, we have not yet populated our type flags.
+        // We can do this by looking at the size of the field, and determining what types it could be.
+        // This first pass is only done once for a type; future passes will remove flags if the type is not compatible.
+        if (Observations++ == 0)
             ObserveFirst(entry, index, data, sizes);
         else
             ObserveSubsequent(entry, index, data);
@@ -23,7 +53,8 @@ public sealed record FieldTypeTracker
 
     private void ObserveFirst(FlatBufferNodeField entry, int index, ReadOnlySpan<byte> data, FieldSizeTracker sizes)
     {
-        FirstPass = false;
+        // The potential type flags have not been populated yet.
+        // We need to bitwise-or them if the field can be interpreted as any of the types.
         if (Type.HasFlagFast(FieldType.StructSingle))
         {
             foreach (var (type, size) in Structs)
@@ -34,67 +65,60 @@ public sealed record FieldTypeTracker
             if (sizes.IsPlausible(1))
                 Single |= TryReadBoolean(entry, index, data);
         }
+
+        if (!sizes.IsPlausible(4))
+            return;
+
         if (Type.HasFlagFast(FieldType.StructArray))
         {
             foreach (var (type, _) in Structs)
-            {
-                if (sizes.IsPlausible(4))
-                    Array |= TryReadTable(entry, index, data, type);
-            }
+                Array |= TryReadTable(entry, index, data, type);
         }
 
-        if (sizes.IsPlausible(4))
+        if (Type.HasFlagFast(FieldType.Object))
         {
-            if (Type.HasFlagFast(FieldType.Object))
-            {
-                Single |= TryRead(entry, index, data, TypeCode.Object);
-                Single |= TryRead(entry, index, data, TypeCode.String);
-            }
-            if (Type.HasFlagFast(FieldType.ObjectArray))
-            {
-                Array |= TryReadTable(entry, index, data, TypeCode.Object);
-                Array |= TryReadTable(entry, index, data, TypeCode.String);
-            }
+            Single |= TryRead(entry, index, data, TypeCode.Object);
+            Single |= TryRead(entry, index, data, TypeCode.String);
+        }
+
+        if (Type.HasFlagFast(FieldType.ObjectArray))
+        {
+            Array |= TryReadTable(entry, index, data, TypeCode.Object);
+            Array |= TryReadTable(entry, index, data, TypeCode.String);
         }
     }
 
     private void ObserveSubsequent(FlatBufferNodeField entry, int index, ReadOnlySpan<byte> data)
     {
+        // The potential type flags have already been populated.
+        // If the field cannot be interpreted as any of the flagged types, remove the flag.
+        // Only check flagged types.
         foreach (var (type, _) in Structs)
         {
             var mask = 1u << (int)type;
-            if ((Single & mask) != 0)
-            {
-                if (TryRead(entry, index, data, type) == 0)
-                    Single &= ~mask;
-            }
-            if ((Array & mask) != 0)
-            {
-                if (TryReadTable(entry, index, data, type) == 0)
-                    Array &= ~mask;
-            }
+            if ((Single & mask) != 0 && TryRead(entry, index, data, type) == 0)
+                Single &= ~mask;
+            if ((Array & mask) != 0 && TryReadTable(entry, index, data, type) == 0)
+                Array &= ~mask;
         }
         {
             const uint mask = 1u << (int)TypeCode.Boolean;
-            if ((Single & mask) != 0)
-            {
-                if (TryReadBoolean(entry, index, data) == 0)
-                    Single &= ~mask;
-            }
+            if ((Single & mask) != 0 && TryReadBoolean(entry, index, data) == 0)
+                Single &= ~mask;
         }
-        if (Type.HasFlagFast(FieldType.Object))
         {
-            if (TryRead(entry, index, data, TypeCode.Object) == 0)
-                Single &= ~(1u << (int)TypeCode.Object);
-            if (TryRead(entry, index, data, TypeCode.String) == 0)
-                Single &= ~(1u << (int)TypeCode.String);
+            const uint om = 1u << (int)TypeCode.Object;
+            if ((Single & om) != 0 && TryRead(entry, index, data, TypeCode.Object) == 0)
+                Single &= ~om;
+            if ((Array & om) != 0 && TryReadTable(entry, index, data, TypeCode.Object) == 0)
+                Array &= ~om;
         }
-        if (Type.HasFlagFast(FieldType.ObjectArray))
         {
-            if (TryReadTable(entry, index, data, TypeCode.Object) == 0)
-                Array &= ~(1u << (int)TypeCode.Object);
-            if (TryReadTable(entry, index, data, TypeCode.String) == 0)
-                Array &= ~(1u << (int)TypeCode.String);
+            const uint mask = 1u << (int)TypeCode.String;
+            if ((Single & mask) != 0 && TryRead(entry, index, data, TypeCode.String) == 0)
+                Single &= ~mask;
+            if ((Array & mask) != 0 && TryReadTable(entry, index, data, TypeCode.String) == 0)
+                Array &= ~mask;
         }
     }
 
