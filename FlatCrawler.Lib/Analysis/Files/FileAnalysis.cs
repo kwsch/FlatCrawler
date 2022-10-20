@@ -74,7 +74,7 @@ public static class FileAnalysis
     private static void ExportMetadata(IEnumerable<FileAnalysisResult> results, string filePath)
     {
         using var swResults = File.CreateText(filePath);
-        var ordered = results.GroupBy(z => z.FieldCount);
+        var ordered = results.GroupBy(z => z.FieldCount).OrderBy(z => z.Key);
         foreach (var fc in ordered)
         {
             swResults.WriteLine($"Field count: {fc.Key}");
