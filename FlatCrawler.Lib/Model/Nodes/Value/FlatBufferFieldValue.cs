@@ -21,7 +21,7 @@ public sealed record FlatBufferFieldValue<T> : FlatBufferNode, IStructNode where
         {
             if (Value is not IFormattable f)
                 return Type.ToString();
-            if (Type is not TypeCode.Single or TypeCode.Double)
+            if (Type is not TypeCode.Single and not TypeCode.Double)
                 return $"{Type} {f:X} ({f})";
             return $"{Type} {f}";
         }
