@@ -369,8 +369,9 @@ public sealed class ConsoleCrawler
 
     private static void PrintFieldAnalysis(FieldAnalysisResult result, FlatBufferNodeField node, ReadOnlySpan<byte> data)
     {
-        foreach (var (index, obs) in result.Fields.OrderBy(z => z.Key))
-            Console.WriteLine($"[{index}] {obs.Summary(node, index, data)}");
+        int hash = 0;
+        var settings = new SchemaAnalysisSettings();
+        FileAnalysis.RecursiveDump(node, data, result.Fields, Console.Out, ref hash, settings);
     }
 
     private static void AnalyzeUnion(ReadOnlySpan<byte> data, IArrayNode array)

@@ -28,11 +28,11 @@ public sealed record FieldSizeTracker(int Min, int Max, bool IsUncertain)
         {
             // The last field (highest offset) may have unused padding afterwards.
             // Only allow reducing the size of the field if it was the last field when first witnessed.
-            if (!IsUncertain || max >= Max || min > Min)
+            if (!IsUncertain && !isUncertain)
                 throw new InvalidOperationException("Field size mismatch");
         }
 
-        Max = max; // same as Math.Min per logic above
+        Max = Math.Min(Max, max);
         Min = Math.Max(Min, min);
         IsUncertain &= isUncertain;
     }

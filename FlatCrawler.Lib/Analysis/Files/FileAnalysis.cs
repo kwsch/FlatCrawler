@@ -40,7 +40,7 @@ public static class FileAnalysis
         if (!Directory.Exists(dest))
             Directory.CreateDirectory(dest);
 
-        var files = Directory.EnumerateFiles(settings.InputPath, "*.*", SearchOption.AllDirectories);
+        var files = Directory.EnumerateFiles(settings.InputPath, settings.SearchPattern, SearchOption.AllDirectories);
 
         Span<byte> buffer = new byte[settings.MaxPeekSize].AsSpan();
         List<FileAnalysisResult> results = new();
@@ -139,28 +139,64 @@ public static class FileAnalysis
     private static FileAnalysisResult DumpFile(FileAnalysisSettings settings, string file, FieldAnalysisResult analysis, FlatBufferNodeField node, ReadOnlySpan<byte> data)
     {
         // Create a unique hash based on the field data.
-        var hash = 0;
-        var ordered = analysis.Fields.OrderBy(z => z.Key);
-        if (settings.DumpIndividualSchemaAnalysis)
-        {
-            var outputPath = settings.GetOutputPath(file);
-            using var sw = File.CreateText(outputPath);
+        if (!settings.DumpIndividualSchemaAnalysis)
+            return DumpSingleResult(file, analysis, node);
 
-            foreach (var (index, obs) in ordered)
+        var outputPath = settings.GetOutputPath(file);
+        using var sw = File.CreateText(outputPath);
+
+        int hash = 0;
+        RecursiveDump(node, data, analysis.Fields, sw, ref hash, settings);
+        // Return the file analysis result.
+        return new(node.FieldCount, hash, Path.GetFileName(file), file);
+    }
+
+    public static void RecursiveDump(FlatBufferNodeField node, ReadOnlySpan<byte> data, Dictionary<int, FieldObservations> fields, TextWriter sw, ref int hash, ISchemaAnalysisSettings settings, int depth = 0)
+    {
+        var ordered = fields.OrderBy(z => z.Key);
+        foreach (var (index, obs) in ordered)
+        {
+            var line = $"[{index}] {obs.Summary(node, index, data)}";
+            var padded = line.PadLeft(depth + line.Length, '\t');
+            sw.WriteLine(padded);
+            hash = HashCode.Combine(hash, obs.GetHashCode());
+
+            if (depth > settings.MaxRecursionDepth)
+                continue;
+
+            // Peek deeper if possible.
+            if (obs.Type.IsPotentialObject)
             {
-                var line = $"[{index}] {obs.Summary(node, index, data)}";
-                sw.WriteLine(line);
-                hash = HashCode.Combine(hash, obs.GetHashCode());
+                var child = node.ReadAsObject(data, index);
+                var analysis = child.AnalyzeFields(data);
+                if (analysis.IsAnyFieldRecognized)
+                {
+                    var header = $"{"".PadLeft(depth + 1, '\t')}As Object:";
+                    sw.WriteLine(header);
+                    RecursiveDump(child, data, analysis.Fields, sw, ref hash, settings, depth + 1);
+                }
+            }
+            if (obs.Type.IsPotentialObjectArray)
+            {
+                var child = node.ReadAsTable(data, index);
+                var analysis = child.AnalyzeFields(data);
+                if (analysis.IsAnyFieldRecognized)
+                {
+                    var header = $"{"".PadLeft(depth + 1, '\t')}As Object[]:";
+                    sw.WriteLine(header);
+                    RecursiveDump(child.GetEntry(0), data, analysis.Fields, sw, ref hash, settings, depth + 1);
+                }
             }
         }
-        else
-        {
-            foreach (var (_, obs) in ordered)
-                hash = HashCode.Combine(hash, obs.GetHashCode());
-        }
+    }
 
+    private static FileAnalysisResult DumpSingleResult(string file, FieldAnalysisResult analysis, FlatBufferNodeField node)
+    {
+        var hash = 0;
+        var ordered = analysis.Fields.OrderBy(z => z.Key);
+        foreach (var (_, obs) in ordered)
+            hash = HashCode.Combine(hash, obs.GetHashCode());
         // Return the file analysis result.
-        var fileName = Path.GetFileName(file);
-        return new(node.FieldCount, hash, fileName, file);
+        return new(node.FieldCount, hash, Path.GetFileName(file), file);
     }
 }

@@ -7,7 +7,7 @@ namespace FlatCrawler.Lib;
 /// </summary>
 /// <param name="InputPath">Root folder to search within.</param>
 /// <param name="OutputPath">Folder to output the analysis results to.</param>
-public sealed record FileAnalysisSettings(string InputPath, string OutputPath)
+public sealed record FileAnalysisSettings(string InputPath, string OutputPath) : ISchemaAnalysisSettings
 {
     /// <summary>
     /// File name search pattern.
@@ -39,6 +39,11 @@ public sealed record FileAnalysisSettings(string InputPath, string OutputPath)
     /// Output file name format for individual schema dumps.
     /// </summary>
     public string SchemaDumpFormat { get; init; } = "{0}.txt";
+
+    /// <summary>
+    /// Max recursion depth in object tree for analyzing child schemas.
+    /// </summary>
+    public int MaxRecursionDepth { get; init; } = 5;
 
     /// <summary>
     /// Gets the full path to the output file that contains all schema analysis lines.
