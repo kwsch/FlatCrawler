@@ -17,16 +17,24 @@ public sealed record FlatBufferFieldValue<T> : FlatBufferNode, IStructNode where
 
     public override string TypeName
     {
-        get
+        get => Value switch
         {
-            if (Value is not IFormattable f)
-                return Type.ToString();
-            if (Type is not TypeCode.Single and not TypeCode.Double)
-                return $"{Type} {f:X} ({f})";
-            return $"{Type} {f}";
-        }
+            bool b => $"{Type} {b}",
+            IFormattable f => GetFormattedValue(f, Type),
+            _ => base.TypeName,
+        };
         set { }
     }
+
+    private static string GetFormattedValue(IFormattable f, TypeCode type) => type switch
+    {
+        TypeCode.Single or TypeCode.Double => $"{type} {f:R}",
+        TypeCode.Byte   or TypeCode.SByte  => $"{type} {f:X2} ({f})",
+        TypeCode.UInt16 or TypeCode.Int16  => $"{type} {f:X4} ({f})",
+        TypeCode.UInt32 or TypeCode.Int32  => $"{type} {f:X8} ({f})",
+        TypeCode.UInt64 or TypeCode.UInt64 => $"{type} {f:X16} ({f})",
+        _ => $"{type} {f:X} ({f})",
+    };
 
     private FlatBufferFieldValue(T value, TypeCode type, FlatBufferNode parent, int offset) : base(offset, parent)
     {
