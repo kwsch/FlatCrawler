@@ -7,6 +7,8 @@ namespace FlatCrawler.Lib;
 /// <param name="Parent">Parent that owns this child node.</param>
 public abstract record FlatBufferNode(int Offset, FlatBufferNode? Parent = null)
 {
+    public FlatBufferFile FbFile => FlatBufferFile.Instance;
+
     /// <summary> Parent that owns this child node. </summary>
     public readonly FlatBufferNode? Parent = Parent;
 

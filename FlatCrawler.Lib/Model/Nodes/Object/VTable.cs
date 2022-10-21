@@ -36,10 +36,12 @@ public sealed class VTable
     private const int SizeOfField = sizeof(ushort);
     private const int HeaderSize = SizeOfVTableLength + SizeOfDataTableLength;
 
-    public VTable(ReadOnlySpan<byte> data, int offset)
+    public int RefCount { get; set; } = 0;
+
+    public VTable(FlatBufferFile file, int offset)
     {
         Location = offset;
-        data = data[offset..]; // adjust view window to be relative to vtable location
+        var data = file.Data[offset..]; // adjust view window to be relative to vtable location
         VTableLength = ReadInt16LittleEndian(data);
 
         // Validate VTable (from https://github.com/dvidelabs/flatcc/blob/master/doc/binary-format.md#verification)

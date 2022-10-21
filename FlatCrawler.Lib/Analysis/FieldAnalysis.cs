@@ -30,33 +30,33 @@ public static class FieldAnalysis
     /// </summary>
     /// <param name="paths">File paths to analyze.</param>
     /// <param name="fieldSelector">Navigation method to get the node to start analyzing.</param>
-    public static FieldAnalysisResult AnalyzeFields(IEnumerable<string> paths, Func<FlatBufferRoot, byte[], IEnumerable<FlatBufferNodeField>> fieldSelector)
+    public static FieldAnalysisResult AnalyzeFields(IEnumerable<string> paths, Func<FlatBufferRoot, FlatBufferFile, IEnumerable<FlatBufferNodeField>> fieldSelector)
     {
-        var sources = paths.Select(File.ReadAllBytes);
+        var sources = paths.Select(x => new FlatBufferFile(x));
         return AnalyzeFields(sources, fieldSelector);
     }
 
-    public static FieldAnalysisResult AnalyzeFields(IEnumerable<byte[]> sources, Func<FlatBufferRoot, byte[], IEnumerable<FlatBufferNodeField>> fieldSelector)
+    public static FieldAnalysisResult AnalyzeFields(IEnumerable<FlatBufferFile> sources, Func<FlatBufferRoot, FlatBufferFile, IEnumerable<FlatBufferNodeField>> fieldSelector)
     {
         var result = new FieldAnalysisResult();
         var temp = new List<NodeStorage<FlatBufferNodeField>>();
-        foreach (var data in sources)
+        foreach (var file in sources)
         {
-            var root = FlatBufferRoot.Read(0, data);
-            var fields = fieldSelector(root, data).ToArray();
+            var root = FlatBufferRoot.Read(file, 0);
+            var fields = fieldSelector(root, file).ToArray();
 
             result.ScanFieldSize(fields);
 
             // Retain for later use
-            temp.Add(new(data, fields));
+            temp.Add(new(file, fields));
         }
 
         result.GuessOverallType();
 
         foreach (var x in temp)
-            result.ScanFieldType(x.Nodes, x.Data);
+            result.ScanFieldType(x.Nodes, x.File.Data);
         return result;
     }
 
-    private readonly record struct NodeStorage<T>(byte[] Data, IReadOnlyList<T> Nodes);
+    private readonly record struct NodeStorage<T>(FlatBufferFile File, IReadOnlyList<T> Nodes);
 }

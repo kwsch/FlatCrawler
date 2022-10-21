@@ -14,7 +14,6 @@ public sealed class ConsoleCrawler
 
     private readonly string FilePath;
 
-    // TODO: Use the file wrapper
     private readonly FlatBufferFile FbFile;
 
     public ConsoleCrawler(string path, FlatBufferFile file)
@@ -32,7 +31,7 @@ public sealed class ConsoleCrawler
         Console.WriteLine($"Crawling {Console.Title = fn}...");
         Console.WriteLine();
 
-        FlatBufferNode node = FlatBufferRoot.Read(0, FbFile.Data);
+        FlatBufferNode node = FlatBufferRoot.Read(FbFile, 0);
         node.PrintTree();
 
         Console.OutputEncoding = Encoding.UTF8; // japanese strings will show up as boxes rather than ????

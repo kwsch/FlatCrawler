@@ -14,7 +14,7 @@ public sealed record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
     private FlatBufferObject(int offset, VTable vTable, int dataTableOffset, FlatBufferNode parent) :
         base(offset, vTable, dataTableOffset, parent)
     {
-        FieldInfo = new FBFieldInfo { Type = new FBClass() };
+        FieldInfo = new FBFieldInfo { Type = new FBClass(FbFile) };
         RegisterObjectClass();
     }
 
@@ -95,7 +95,7 @@ public sealed record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
     {
         // Read VTable
         var vTableOffset = GetVtableOffset(tableOffset, data, true);
-        var vTable = ReadVTable(vTableOffset, data);
+        var vTable = parent.FbFile.PeekVTable(vTableOffset);
 
         // Ensure VTable is correct
         if (vTableOffset < tableOffset && (vTableOffset + vTable.VTableLength) > tableOffset)

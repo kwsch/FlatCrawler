@@ -29,14 +29,15 @@ public sealed record FlatBufferRoot : FlatBufferNodeField
         MagicLength = dataTableOffset == HeaderSize ? 0 : magic.Length;
     }
 
-    public static FlatBufferRoot Read(int offset, ReadOnlySpan<byte> data)
+    public static FlatBufferRoot Read(FlatBufferFile file, int offset)
     {
-        int dataTableOffset = ReadInt32LittleEndian(data[offset..]) + offset;
-        var magic = dataTableOffset == HeaderSize ? NO_MAGIC : ReadMagic(offset + HeaderSize, data);
+        int dataTableOffset = ReadInt32LittleEndian(file.Data[offset..]) + offset;
+        var magic = dataTableOffset == HeaderSize ? NO_MAGIC : ReadMagic(offset + HeaderSize, file.Data);
 
         // Read VTable
-        var vTableOffset = GetVtableOffset(dataTableOffset, data, true);
-        var vTable = ReadVTable(vTableOffset, data);
+        var vTableOffset = GetVtableOffset(dataTableOffset, file.Data, true);
+        var vTable = file.PeekVTable(vTableOffset);
+        file.RegisterVTable(vTable);
         return new FlatBufferRoot(vTable, magic, dataTableOffset);
     }
 

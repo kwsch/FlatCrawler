@@ -80,8 +80,6 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
         return reverse ? offset - ofs : offset + ofs;
     }
 
-    protected static VTable ReadVTable(int offset, ReadOnlySpan<byte> data) => new(data, offset);
-
     public virtual void TrackChildFieldNode(int fieldIndex, ReadOnlySpan<byte> data, TypeCode code, bool asArray, FlatBufferNode node)
     {
         Fields[fieldIndex] = node;

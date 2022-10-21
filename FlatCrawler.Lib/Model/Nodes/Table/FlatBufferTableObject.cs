@@ -36,7 +36,7 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
     private FlatBufferTableObject(int offset, int length, FlatBufferNode parent, int dataTableOffset) :
         base(offset, parent, length, dataTableOffset)
     {
-        FieldInfo = new FBFieldInfo { Type = new FBClass(), IsArray = true };
+        FieldInfo = new FBFieldInfo { Type = new FBClass(FbFile), Size = EntrySize, IsArray = true };
     }
 
     protected override FlatBufferObject GetEntryAtIndex(ReadOnlySpan<byte> data, int entryIndex)

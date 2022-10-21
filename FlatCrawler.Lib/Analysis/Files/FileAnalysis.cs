@@ -73,23 +73,23 @@ public static class FileAnalysis
 
     public static void IterateAndDumpSame(TextWriter sw, FileAnalysisSettings settings)
     {
-        static IEnumerable<FlatBufferNodeField> FieldSelector(FlatBufferRoot root, byte[] _) => new[] { root };
+        static IEnumerable<FlatBufferNodeField> FieldSelector(FlatBufferRoot root, FlatBufferFile _) => new[] { root };
         IterateAndDumpSame(sw, settings, FieldSelector);
     }
 
     public static void IterateAndDumpSame(TextWriter sw, FileAnalysisSettings settings,
-        Func<FlatBufferRoot, byte[], IEnumerable<FlatBufferNodeField>> fieldSelector)
+        Func<FlatBufferRoot, FlatBufferFile, IEnumerable<FlatBufferNodeField>> fieldSelector)
     {
         var files = Directory.GetFiles(settings.InputPath, settings.SearchPattern, SearchOption.AllDirectories);
         var analysis = FieldAnalysis.AnalyzeFields(files, fieldSelector);
 
         // Dump the analysis to a file.
         var first = files[0];
-        var data = File.ReadAllBytes(first);
-        var root = FlatBufferRoot.Read(0, data);
-        var node = fieldSelector(root, data).First();
+        var file = new FlatBufferFile(first);
+        var root = FlatBufferRoot.Read(file, 0);
+        var node = fieldSelector(root, file).First();
         int hash = 0;
-        RecursiveDump(node, data, analysis.Fields, sw, ref hash, settings);
+        RecursiveDump(node, file.Data, analysis.Fields, sw, ref hash, settings);
     }
 
     private static void ExportMetadata(IEnumerable<FileAnalysisResult> results, string filePath)
@@ -113,9 +113,9 @@ public static class FileAnalysis
         }
     }
 
-    private static bool TryAnalyzeFile(FileAnalysisSettings settings, string file, ICollection<FileAnalysisResult> results, Span<byte> buffer)
+    private static bool TryAnalyzeFile(FileAnalysisSettings settings, string filePath, ICollection<FileAnalysisResult> results, Span<byte> buffer)
     {
-        using var fs = File.OpenRead(file);
+        using var fs = File.OpenRead(filePath);
         if (fs.Length > buffer.Length)
             return false;
 
@@ -127,23 +127,23 @@ public static class FileAnalysis
         if (read != length)
             throw new Exception("Read less than expected.");
 
-        return ReadAndDump(settings, file, results, data);
+        return ReadAndDump(new(data), settings, filePath, results);
     }
 
-    private static bool ReadAndDump(FileAnalysisSettings settings, string file, ICollection<FileAnalysisResult> results, ReadOnlySpan<byte> data)
+    private static bool ReadAndDump(FlatBufferFile file, FileAnalysisSettings settings, string filePath, ICollection<FileAnalysisResult> results)
     {
         // Do something with the buffer.
-        if (!FlatBufferFile.GetIsSizeValid(data))
+        if (!file.IsValid)
             return false;
 
         // Read a new root node from the provided data
-        var root = FlatBufferRoot.Read(0, data);
+        var root = FlatBufferRoot.Read(file, 0);
 
         // Get an analysis of the root node.
-        var analysis = root.AnalyzeFields(data);
+        var analysis = root.AnalyzeFields(file.Data);
 
         // Dump the analysis to a file.
-        var info = DumpFile(settings, file, analysis, root, data);
+        var info = DumpFile(settings, filePath, analysis, root, file.Data);
         results.Add(info);
         return true;
     }

@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace FlatCrawler.Lib;
 
-public sealed record FBClass() : FBType(TypeCode.Object)
+public sealed record FBClass(FlatBufferFile File) : FBType(TypeCode.Object)
 {
     public readonly List<ISchemaObserver> Observers = new();
 
@@ -22,7 +22,7 @@ public sealed record FBClass() : FBType(TypeCode.Object)
             return; // already the requested type, no modification needed
 
         if (type == TypeCode.Object)
-            member = member with { IsArray = asArray, Type = new FBClass() };
+            member = member with { IsArray = asArray, Type = new FBClass(File) };
         else
             member = member with { IsArray = asArray, Type = new FBType(type) };
 
