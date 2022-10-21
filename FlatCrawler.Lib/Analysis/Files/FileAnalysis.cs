@@ -71,6 +71,27 @@ public static class FileAnalysis
         ExportMetadata(results, outputResultsPath);
     }
 
+    public static void IterateAndDumpSame(TextWriter sw, FileAnalysisSettings settings)
+    {
+        static IEnumerable<FlatBufferNodeField> FieldSelector(FlatBufferRoot root, byte[] _) => new[] { root };
+        IterateAndDumpSame(sw, settings, FieldSelector);
+    }
+
+    public static void IterateAndDumpSame(TextWriter sw, FileAnalysisSettings settings,
+        Func<FlatBufferRoot, byte[], IEnumerable<FlatBufferNodeField>> fieldSelector)
+    {
+        var files = Directory.GetFiles(settings.InputPath, settings.SearchPattern, SearchOption.AllDirectories);
+        var analysis = FieldAnalysis.AnalyzeFields(files, fieldSelector);
+
+        // Dump the analysis to a file.
+        var first = files[0];
+        var data = File.ReadAllBytes(first);
+        var root = FlatBufferRoot.Read(0, data);
+        var node = fieldSelector(root, data).First();
+        int hash = 0;
+        RecursiveDump(node, data, analysis.Fields, sw, ref hash, settings);
+    }
+
     private static void ExportMetadata(IEnumerable<FileAnalysisResult> results, string filePath)
     {
         using var swResults = File.CreateText(filePath);

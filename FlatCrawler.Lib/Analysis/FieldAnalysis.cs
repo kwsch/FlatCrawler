@@ -25,6 +25,11 @@ public static class FieldAnalysis
         return result;
     }
 
+    /// <summary>
+    /// Useful for analyzing the fields from multiple FlatBuffer input files that share the same schema.
+    /// </summary>
+    /// <param name="paths">File paths to analyze.</param>
+    /// <param name="fieldSelector">Navigation method to get the node to start analyzing.</param>
     public static FieldAnalysisResult AnalyzeFields(IEnumerable<string> paths, Func<FlatBufferRoot, byte[], IEnumerable<FlatBufferNodeField>> fieldSelector)
     {
         var sources = paths.Select(File.ReadAllBytes);
