@@ -374,21 +374,34 @@ public sealed class ConsoleCrawler
         int lastRangeEnd = 0;
         foreach (var range in FbFile.ProtectedDataRanges)
         {
+            if (!range.IsSubRange)
+            {
+                if (lastRangeEnd != range.Start)
+                {
+                    var missingRange = new DataRange(lastRangeEnd..range.Start);
+
+                    // If it's 2 bytes, it's probably padding. Check alignment to 4 bytes.
+                    // TODO: Should probably also validate that the range is actually for a data table.
+                    // TODO: It seems VTables get right-aligned to the nearest 4 byte boundry
+                    if (missingRange.Length == 2 && !MemoryUtil.IsAligned((uint)lastRangeEnd, 4))
+                    {
+                        Console.WriteLine($"Found '{"Padding",-26}' at Range: {missingRange}");
+                    }
+                    else
+                    {
+                        missingDataRanges.Add(missingRange);
+                    }
+                }
+
+                dataSize -= range.Length;
+                lastRangeEnd = range.End;
+            }
+
             if (!DisplaySubRanges && range.IsSubRange)
                 continue;
 
             var str = $"Found '{range.Description,-26}' at Range: {range}";
             Console.WriteLine(FlatBufferPrinter.GetDepthPadded(str, range.IsSubRange ? 1 : 0));
-
-            if (!range.IsSubRange)
-            {
-                dataSize -= range.Length;
-
-                if (lastRangeEnd != range.Start)
-                    missingDataRanges.Add(new DataRange(lastRangeEnd..range.Start));
-
-                lastRangeEnd = range.End;
-            }
         }
 
 
