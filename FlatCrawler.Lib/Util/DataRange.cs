@@ -20,10 +20,10 @@ public readonly record struct DataRange(Range Range, string Description = "", bo
         int r = Offset.CompareTo(other.Offset);
 
         if (r == 0)
-            r = other.Length.CompareTo(Length); // Bigger entry first
+            r = IsSubRange.CompareTo(other.IsSubRange);
 
         if (r == 0)
-            r = IsSubRange.CompareTo(other.IsSubRange);
+            r = Length.CompareTo(other.Length);
 
         return r;
     }
