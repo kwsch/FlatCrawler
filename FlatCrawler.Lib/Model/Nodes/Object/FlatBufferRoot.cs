@@ -25,7 +25,7 @@ public sealed record FlatBufferRoot : FlatBufferObject
         base(0, vTable, dataTableOffset, null!)
     {
         Magic = magic;
-        MagicLength = dataTableOffset == HeaderSize ? 0 : magic.Length;
+        MagicLength = ((magic == NO_MAGIC) ? 0 : magic.Length);
         FieldInfo = FieldInfo with { Size = (HeaderSize + MagicLength) };
         RegisterMemory();
     }
@@ -39,7 +39,7 @@ public sealed record FlatBufferRoot : FlatBufferObject
     public static FlatBufferRoot Read(FlatBufferFile file, int offset)
     {
         int dataTableOffset = ReadInt32LittleEndian(file.Data[offset..]) + offset;
-        var magic = dataTableOffset == HeaderSize ? NO_MAGIC : ReadMagic(offset + HeaderSize, file.Data);
+        var magic = ((dataTableOffset == HeaderSize) ? NO_MAGIC : ReadMagic(offset + HeaderSize, file.Data));
 
         // Read VTable
         var vTableOffset = GetVtableOffset(dataTableOffset, file.Data, true);
