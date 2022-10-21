@@ -167,24 +167,49 @@ public static class FileAnalysis
             // Peek deeper if possible.
             if (obs.Type.IsPotentialObject)
             {
-                var child = node.ReadAsObject(data, index);
-                var analysis = child.AnalyzeFields(data);
-                if (analysis.IsAnyFieldRecognized)
+                if (!node.HasField(index))
                 {
-                    var header = $"{"".PadLeft(depth + 1, '\t')}As Object:";
+                    var header = $"{"".PadLeft(depth + 1, '\t')}As Object: Field not in provided node, probably a sibling entry has it.";
                     sw.WriteLine(header);
-                    RecursiveDump(child, data, analysis.Fields, sw, ref hash, settings, depth + 1);
+                }
+                else
+                {
+                    var child = node.ReadAsObject(data, index);
+                    var analysis = child.AnalyzeFields(data);
+                    if (analysis.IsAnyFieldRecognized)
+                    {
+                        var header = $"{"".PadLeft(depth + 1, '\t')}As Object:";
+                        sw.WriteLine(header);
+                        RecursiveDump(child, data, analysis.Fields, sw, ref hash, settings, depth + 1);
+                    }
                 }
             }
             if (obs.Type.IsPotentialObjectArray)
             {
-                var child = node.ReadAsTable(data, index);
-                var analysis = child.AnalyzeFields(data);
-                if (analysis.IsAnyFieldRecognized)
+                if (!node.HasField(index))
                 {
-                    var header = $"{"".PadLeft(depth + 1, '\t')}As Object[]:";
+                    var header = $"{"".PadLeft(depth + 1, '\t')}As Object[]: Field not in provided node, probably a sibling entry has it.";
                     sw.WriteLine(header);
-                    RecursiveDump(child.GetEntry(0), data, analysis.Fields, sw, ref hash, settings, depth + 1);
+                }
+                else
+                {
+                    var child = node.ReadAsTable(data, index);
+                    var analysis = child.AnalyzeFields(data);
+                    if (analysis.IsAnyFieldRecognized)
+                    {
+                        var firstEntryWithField = child.GetEntryWithField(0);
+                        if (firstEntryWithField != -1)
+                        {
+                            var entry = child.Entries[firstEntryWithField];
+                            var header = $"{"".PadLeft(depth + 1, '\t')}As Object[] (showing index {firstEntryWithField}):";
+                            sw.WriteLine(header);
+                            RecursiveDump(entry, data, analysis.Fields, sw, ref hash, settings, depth + 1);
+                        }
+                        else
+                        {
+                            sw.WriteLine("Probably not an Object[] (no children have fields)");
+                        }
+                    }
                 }
             }
         }

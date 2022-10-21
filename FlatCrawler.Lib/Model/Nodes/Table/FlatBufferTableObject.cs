@@ -31,6 +31,7 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
     }
 
     public override FlatBufferObject GetEntry(int entryIndex) => Entries[entryIndex];
+    public int GetEntryWithField(int fieldIndex) => Array.FindIndex(Entries, e => e.HasField(fieldIndex));
 
     private FlatBufferTableObject(int offset, int length, FlatBufferNode parent, int dataTableOffset) :
         base(offset, parent, length, dataTableOffset)
