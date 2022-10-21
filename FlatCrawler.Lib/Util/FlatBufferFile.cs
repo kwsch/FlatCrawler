@@ -55,7 +55,7 @@ public sealed class FlatBufferFile
         var overlappingRange = ProtectedDataRanges.FirstOrDefault(x => !x.IsSubRange && x.End > range.Start && x.Start < range.End);
 
         if (overlappingRange != default)
-            throw new AccessViolationException($"Data range {range} would overlap protected memory at: {overlappingRange} ({overlappingRange.Description})");
+            throw new AccessViolationException($"Data range {range} ({range.Description}), would overlap protected memory at: {overlappingRange} ({overlappingRange.Description})");
     }
 
     /// <summary>

@@ -17,7 +17,7 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
     private DataRange ObjectArrayMemory => new(DataTableOffset..(DataTableOffset + Length * EntrySize), $"{TypeName} Ptrs", true);
 
     /// <summary>
-    /// Absolute offset that has the raw string bytes.
+    /// Absolute offset that has the raw table pointer bytes.
     /// </summary>
     public int FieldOffset { get; }
 
@@ -100,31 +100,12 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         var arrayOffset = parent.GetReferenceOffset(fieldIndex, data);
         int length = ReadInt32LittleEndian(data[arrayOffset..]);
         var dataTableOffset = arrayOffset + HeaderSize;
+
         if (GetSize(length) > (data.Length - dataTableOffset))
             throw new ArgumentException("The specified data is too short to contain the specified array.", nameof(data));
 
         var node = new FlatBufferTableObject(offset, arrayOffset, length, parent, dataTableOffset);
         node.ReadArray(data);
-
-        // If this table is part of another table, link the ObjectTypes (class) reference
-        // If not, then just set up placeholder data.
-        /*if (parent.Parent is not FlatBufferTableObject t)
-        {
-            int memberCount = node.GetEntryFieldCountMax();
-            node.ObjectClass = new FlatBufferTableClass(memberCount);
-        }
-        else if (t.ObjectClass.TryGetSubClass(fieldIndex, out var subClass))
-        {
-            node.ObjectClass = subClass;
-        }
-        else
-        {
-            int memberCount = node.GetEntryFieldCountMax();
-            node.ObjectClass = t.ObjectClass.RegisterSubClass(fieldIndex, memberCount);
-        }
-
-        node.ObjectClass.MemberTypeChanged += node.ObjectClass_MemberTypeChanged;*/
-
         return node;
     }
 

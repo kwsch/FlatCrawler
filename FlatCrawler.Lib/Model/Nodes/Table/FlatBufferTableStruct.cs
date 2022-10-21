@@ -10,19 +10,56 @@ namespace FlatCrawler.Lib;
 /// <inheritdoc cref="FlatBufferFieldValue&lt;T&gt;"/>
 public sealed record FlatBufferTableStruct<T> : FlatBufferTable<FlatBufferFieldValue<T>> where T : struct
 {
+    public const int HeaderSize = sizeof(int);
+    public readonly int EntrySize = Marshal.SizeOf<T>();
+
+    private DataRange NodePtrMemory => new(FieldOffset..(FieldOffset + Size), $"{TypeName} Ptr (@ 0x{Offset:X})", true);
+    private DataRange TableMemory => new(Offset..(DataTableOffset + Length * EntrySize), $"{TypeName} Data");
+    private DataRange ArrayLengthMemory => new(Offset..(Offset + HeaderSize), $"Array Length ({Length})", true);
+    private DataRange ObjectArrayMemory => new(DataTableOffset..(DataTableOffset + Length * EntrySize), $"{TypeName} Ptrs", true);
+
     public override string TypeName { get => $"{ArrayType}[]"; set { } }
 
     /// <summary> The type of the array elements, <typeparamref name="T"/>. </summary>
     public TypeCode ArrayType { get; }
 
-    private FlatBufferTableStruct(int offset, int length, FlatBufferNode parent, int dataTableOffset, TypeCode typeCode) : base(offset, parent, length, dataTableOffset)
+    /// <summary>
+    /// Absolute offset that has the raw table pointer bytes.
+    /// </summary>
+    public int FieldOffset { get; }
+
+    private FlatBufferTableStruct(int fieldOffset, int arrayOffset, int length, FlatBufferNode parent, int dataTableOffset, TypeCode typeCode) :
+        base(arrayOffset, parent, length, dataTableOffset)
     {
+        FieldOffset = fieldOffset;
         ArrayType = typeCode;
+    }
+
+    public override void RegisterMemory()
+    {
+        FbFile.SetProtectedMemory(NodePtrMemory);
+        FbFile.SetProtectedMemory(TableMemory);
+        FbFile.SetProtectedMemory(ArrayLengthMemory);
+        FbFile.SetProtectedMemory(ObjectArrayMemory);
+
+        foreach (var entry in Entries)
+            entry.RegisterMemory();
+    }
+
+    public override void UnRegisterMemory()
+    {
+        FbFile.RemoveProtectedMemory(NodePtrMemory);
+        FbFile.RemoveProtectedMemory(TableMemory);
+        FbFile.RemoveProtectedMemory(ArrayLengthMemory);
+        FbFile.RemoveProtectedMemory(ObjectArrayMemory);
+
+        foreach (var entry in Entries)
+            entry.UnRegisterMemory();
     }
 
     protected override FlatBufferFieldValue<T> GetEntryAtIndex(ReadOnlySpan<byte> data, int entryIndex)
     {
-        var offset = DataTableOffset + (entryIndex * Marshal.SizeOf<T>());
+        var offset = DataTableOffset + (entryIndex * EntrySize);
         return FlatBufferFieldValue<T>.Read(offset, this, data, ArrayType);
     }
 
@@ -58,14 +95,16 @@ public sealed record FlatBufferTableStruct<T> : FlatBufferTable<FlatBufferFieldV
     /// <summary>
     /// Reads a new table node from the specified data.
     /// </summary>
-    public static FlatBufferTableStruct<T> Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data, TypeCode type)
+    public static FlatBufferTableStruct<T> Read(int offset, FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data, TypeCode type)
     {
-        int length = ReadInt32LittleEndian(data[offset..]);
-        var dataTableOffset = offset + 4;
-        if (GetSize(length) > data.Length - dataTableOffset)
+        var arrayOffset = parent.GetReferenceOffset(fieldIndex, data);
+        int length = ReadInt32LittleEndian(data[arrayOffset..]);
+        var dataTableOffset = arrayOffset + HeaderSize;
+
+        if (GetSize(length) > (data.Length - dataTableOffset))
             throw new ArgumentException("The specified data is too short to contain the specified array.", nameof(data));
 
-        var node = new FlatBufferTableStruct<T>(offset, length, parent, dataTableOffset, type);
+        var node = new FlatBufferTableStruct<T>(offset, arrayOffset, length, parent, dataTableOffset, type);
         node.ReadArray(data);
         return node;
     }
@@ -78,5 +117,5 @@ public sealed record FlatBufferTableStruct<T> : FlatBufferTable<FlatBufferFieldV
     /// <param name="data">The data to read from.</param>
     /// <param name="type">The type of the array.</param>
     /// <returns>New child node.</returns>
-    public static FlatBufferTableStruct<T> Read(FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data, TypeCode type) => Read(parent.GetReferenceOffset(fieldIndex, data), parent, data, type);
+    public static FlatBufferTableStruct<T> Read(FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data, TypeCode type) => Read(parent.GetFieldOffset(fieldIndex), parent, fieldIndex, data, type);
 }
