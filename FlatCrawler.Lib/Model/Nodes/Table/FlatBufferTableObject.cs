@@ -39,18 +39,22 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         FieldInfo = new FBFieldInfo { Type = new FBClass(FbFile), Size = EntrySize, IsArray = true };
     }
 
+    public override void TrackFieldInfo(FBFieldInfo sharedInfo)
+    {
+        FieldInfo = sharedInfo;
+
+        // Override entry type with table's new class type
+        foreach (var entry in Entries)
+            entry.TrackType(FieldInfo);
+    }
+
     protected override FlatBufferObject GetEntryAtIndex(ReadOnlySpan<byte> data, int entryIndex)
     {
         var arrayEntryPointerOffset = DataTableOffset + (entryIndex * EntrySize);
         var dataTablePointerShift = ReadInt32LittleEndian(data[arrayEntryPointerOffset..]);
         var dataTableOffset = arrayEntryPointerOffset + dataTablePointerShift;
 
-        var entry = FlatBufferObject.Read(arrayEntryPointerOffset, this, data, dataTableOffset);
-
-        // Override entry type with table's class type
-        entry.TrackType(ObjectClass);
-
-        return entry;
+        return FlatBufferObject.Read(arrayEntryPointerOffset, this, data, dataTableOffset);
     }
 
     public static int GetSize(int length) => length * (EntrySize + sizeof(int)); // bare minimum rough guess, considering vtable

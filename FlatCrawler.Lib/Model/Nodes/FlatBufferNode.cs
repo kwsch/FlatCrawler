@@ -38,7 +38,7 @@ public abstract record FlatBufferNode(int Offset, FlatBufferNode? Parent = null)
     /// Override the local type with a shared type
     /// </summary>
     /// <param name="type">The shared FBType</param>
-    public virtual void TrackType(FBType type) => FieldInfo = FieldInfo with { Type = type };
+    public virtual void TrackType(FBFieldInfo sharedInfo) => FieldInfo = FieldInfo with { Type = sharedInfo.Type, Size = sharedInfo.Size };
 
     /// <summary>
     /// Override the local field info with a shared field

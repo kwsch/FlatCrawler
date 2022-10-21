@@ -14,7 +14,7 @@ public sealed record FBClass(FlatBufferFile File) : FBType(TypeCode.Object)
 
     private readonly SortedDictionary<int, VTable> AssociatedVTables = new();
 
-    public void SetMemberType(int memberIndex, ReadOnlySpan<byte> data, TypeCode type, bool asArray = false)
+    public void SetMemberType(ISchemaObserver sender, int memberIndex, ReadOnlySpan<byte> data, TypeCode type, bool asArray = false)
     {
         ref var member = ref _members[memberIndex];
         var oldType = member.Type;
@@ -26,7 +26,7 @@ public sealed record FBClass(FlatBufferFile File) : FBType(TypeCode.Object)
         else
             member = member with { IsArray = asArray, Type = new FBType(type) };
 
-        OnMemberTypeChanged(new(memberIndex, data, member, oldType, member.Type));
+        OnMemberTypeChanged(sender, new(memberIndex, File.Data, member, oldType, member.Type));
     }
 
     public ClassUpdateResult AssociateVTable(VTable vtable)
@@ -121,10 +121,15 @@ public sealed record FBClass(FlatBufferFile File) : FBType(TypeCode.Object)
         return result;
     }
 
-    private void OnMemberTypeChanged(MemberTypeChangedArgs args)
+    private void OnMemberTypeChanged(ISchemaObserver sender, MemberTypeChangedArgs args)
     {
         foreach (var subscriber in Observers)
+        {
+            if (subscriber == sender)
+                continue;
+
             subscriber.OnMemberTypeChanged(args);
+        }
     }
 
     private void OnMemberCountChanged()
