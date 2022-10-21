@@ -9,6 +9,15 @@ namespace FlatCrawler.Lib;
 /// </summary>
 public sealed record FlatBufferStringValue : FlatBufferNode
 {
+    public const int HeaderSize = sizeof(int);
+    public const int NullTerminatorSize = sizeof(byte);
+    private DataRange NodePtrMemory => new(Offset..(Offset + Size), $"String Ptr (@ 0x{StringOffset:X})", true);
+    private DataRange StringMemory => new(StringOffset..(StringOffset + StringLength), "String Value");
+    private DataRange StringLengthMemory => new(StringLengthOffset..(StringLengthOffset + HeaderSize), $"String Length ({StringLength})");
+    private int AlignedPadding => (int)MemoryUtil.AlignToBytes((uint)StringMemory.End + NullTerminatorSize, 2);
+    private DataRange NullTerminatorMemory => new(StringMemory.End..AlignedPadding, "Null Terminator + Pad");
+
+
     public override string TypeName { get => $"string ({Value})"; set { } }
 
     /// <summary>
@@ -38,9 +47,6 @@ public sealed record FlatBufferStringValue : FlatBufferNode
         }
     }
 
-    public const int HeaderSize = sizeof(int);
-    public const int NullTerminatorSize = sizeof(byte);
-
     private FlatBufferStringValue(int definedOffset, int stringLengthOffset, int stringOffset, int stringLength, string str, FlatBufferNode parent) :
         base(definedOffset, parent)
     {
@@ -48,6 +54,22 @@ public sealed record FlatBufferStringValue : FlatBufferNode
         StringLengthOffset = stringLengthOffset;
         StringLength = stringLength;
         Value = str;
+    }
+
+    public override void RegisterMemory()
+    {
+        FbFile.SetProtectedMemory(NodePtrMemory);
+        FbFile.SetProtectedMemory(StringMemory);
+        FbFile.SetProtectedMemory(StringLengthMemory);
+        FbFile.SetProtectedMemory(NullTerminatorMemory);
+    }
+
+    public override void UnRegisterMemory()
+    {
+        FbFile.RemoveProtectedMemory(NodePtrMemory);
+        FbFile.RemoveProtectedMemory(StringMemory);
+        FbFile.RemoveProtectedMemory(StringLengthMemory);
+        FbFile.RemoveProtectedMemory(NullTerminatorMemory);
     }
 
     public static FlatBufferStringValue Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data)

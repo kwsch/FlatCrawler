@@ -9,7 +9,7 @@ public sealed record FBFieldInfo
     public bool IsArray { get; init; }
 
     /// <summary>
-    /// The size of the field value in bytes
+    /// The size of the field type in bytes
     /// </summary>
     public int Size { get; init; }
 

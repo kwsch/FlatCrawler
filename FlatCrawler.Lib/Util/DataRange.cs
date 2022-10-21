@@ -2,13 +2,29 @@ using System;
 
 namespace FlatCrawler.Lib;
 
-public readonly record struct DataRange(Range Range, bool IsSubRange = false, string Description = "")
+public readonly record struct DataRange(Range Range, string Description = "", bool IsSubRange = false) : IComparable<DataRange>
 {
+    public int Start => Range.Start.Value;
+    public int End => Range.End.Value;
+
     public int Offset => Range.Start.Value;
     public int Length => Range.End.Value - Range.Start.Value;
 
     public override string ToString()
     {
         return $"[0x{Offset:X}..0x{Range.End.Value:X}] (Length: {Length})";
+    }
+
+    public int CompareTo(DataRange other)
+    {
+        int r = Offset.CompareTo(other.Offset);
+
+        if (r == 0)
+            r = other.Length.CompareTo(Length); // Bigger entry first
+
+        if (r == 0)
+            r = IsSubRange.CompareTo(other.IsSubRange);
+
+        return r;
     }
 }

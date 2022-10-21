@@ -18,6 +18,11 @@ public abstract record FlatBufferNode(int Offset, FlatBufferNode? Parent = null)
     /// <summary> Absolute offset that the node starts at. </summary>
     public readonly int Offset = Offset;
 
+    /// <summary>
+    /// The size of the node in bytes
+    /// </summary>
+    public int Size => FieldInfo.Size;
+
     /// <summary> Tagged name of the node. </summary>
     public virtual string Name { get => FieldInfo.Name; set => FieldInfo.Name = value; }
 
@@ -45,4 +50,7 @@ public abstract record FlatBufferNode(int Offset, FlatBufferNode? Parent = null)
     /// </summary>
     /// <param name="sharedInfo">The shared FBFieldInfo</param>
     public virtual void TrackFieldInfo(FBFieldInfo sharedInfo) => FieldInfo = sharedInfo;
+
+    public virtual void RegisterMemory() { }
+    public virtual void UnRegisterMemory() { }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace FlatCrawler.Lib;
 
@@ -30,6 +31,33 @@ public sealed class FlatBufferFile
         Instance = this;
     }
 
+    public void SetProtectedMemory(DataRange range)
+    {
+        CheckAccessViolation(range);
+        ProtectedDataRanges.Add(range);
+    }
+
+    public void RemoveProtectedMemory(DataRange range)
+    {
+        ProtectedDataRanges.Remove(range);
+    }
+
+    /// <summary>
+    /// Check if any of the protected ranges overlap with the provided range
+    /// </summary>
+    /// <param name="range">The range to check</param>
+    /// <exception cref="AccessViolationException">When the range overlaps protected memory</exception>
+    public void CheckAccessViolation(DataRange range)
+    {
+        if (range.IsSubRange) // Ignore sub ranges
+            return;
+
+        var overlappingRange = ProtectedDataRanges.FirstOrDefault(x => !x.IsSubRange && x.End > range.Start && x.Start < range.End);
+
+        if (overlappingRange != default)
+            throw new AccessViolationException($"Data range {range} would overlap protected memory at: {overlappingRange} ({overlappingRange.Description})");
+    }
+
     /// <summary>
     /// Read the VTable at <paramref name="offset"/>.
     /// If a VTable was already registered at that location, the registered VTable will be returned.
@@ -50,6 +78,7 @@ public sealed class FlatBufferFile
         if (vTable.RefCount == 1)
         {
             VTables.Add(vTable.Location, vTable);
+            SetProtectedMemory(vTable.VTableMemory);
         }
     }
 
@@ -61,6 +90,7 @@ public sealed class FlatBufferFile
         if (vTable.RefCount == 0)
         {
             VTables.Remove(vTable.Location);
+            RemoveProtectedMemory(vTable.VTableMemory);
         }
     }
 

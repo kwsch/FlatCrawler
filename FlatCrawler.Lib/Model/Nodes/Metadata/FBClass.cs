@@ -29,14 +29,29 @@ public sealed record FBClass(FlatBufferFile File) : FBType(TypeCode.Object)
         OnMemberTypeChanged(sender, new(memberIndex, File.Data, member, oldType, member.Type));
     }
 
-    public ClassUpdateResult AssociateVTable(VTable vtable)
+    public void RegisterMemory()
+    {
+        foreach (var vTable in AssociatedVTables.Values)
+        {
+            File.RegisterVTable(vTable);
+        }
+    }
+
+    public void UnRegisterMemory()
+    {
+        foreach (var vTable in AssociatedVTables.Values)
+        {
+            File.UnRegisterVTable(vTable);
+        }
+    }
+
+    public ClassUpdateResult AssociateVTable(VTable vTable)
     {
         ClassUpdateResult result = 0;
-        if (AssociatedVTables.ContainsKey(vtable.Location))
+        if (AssociatedVTables.ContainsKey(vTable.Location))
             return ClassUpdateResult.None;
 
-        AssociatedVTables.Add(vtable.Location, vtable);
-
+        AssociatedVTables.Add(vTable.Location, vTable);
         // We can't map to VTable offsets here, as each VTable can point to different offsets.
         // The only guarantee we have is that they map to the correct field id
         // A table field id maps to a vtable field id using the formula
@@ -56,7 +71,7 @@ public sealed record FBClass(FlatBufferFile File) : FBType(TypeCode.Object)
         // var maxFields = 0;
 
         // Append members until count matches vtable field count
-        var info = vtable.FieldInfo;
+        var info = vTable.FieldInfo;
         if (_members.Length < info.Length)
         {
             var newMembers = new FBFieldInfo[info.Length];
@@ -71,7 +86,7 @@ public sealed record FBClass(FlatBufferFile File) : FBType(TypeCode.Object)
             OnMemberCountChanged();
         }
 
-        result |= UpdateSizes(vtable);
+        result |= UpdateSizes(vTable);
         return result;
     }
 

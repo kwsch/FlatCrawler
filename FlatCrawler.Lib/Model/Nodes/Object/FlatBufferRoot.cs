@@ -11,22 +11,29 @@ namespace FlatCrawler.Lib;
 /// Very similar to <see cref="FlatBufferObject"/>, except it can be prefixed by a magic file identifier.
 /// Usually is a unique schema to serve as an entry point for end users.
 /// </remarks>
-public sealed record FlatBufferRoot : FlatBufferNodeField
+public sealed record FlatBufferRoot : FlatBufferObject
 {
-    public const int HeaderSize = sizeof(int);
     private const int MaxMagicLength = 4;
     private const string NO_MAGIC = "NO MAGIC";
 
     public string Magic { get; }
     public int MagicLength { get; }
-    public int Size => HeaderSize + MagicLength;
     public override string TypeName { get => "Root"; set { } }
+    private DataRange NodeMemory => new(0..Size, TypeName);
 
     private FlatBufferRoot(VTable vTable, string magic, int dataTableOffset) :
-        base(0, vTable, dataTableOffset)
+        base(0, vTable, dataTableOffset, null!)
     {
         Magic = magic;
         MagicLength = dataTableOffset == HeaderSize ? 0 : magic.Length;
+        FieldInfo = FieldInfo with { Size = (HeaderSize + MagicLength) };
+        RegisterMemory();
+    }
+
+    public override void RegisterMemory()
+    {
+        FbFile.SetProtectedMemory(NodeMemory);
+        base.RegisterMemory();
     }
 
     public static FlatBufferRoot Read(FlatBufferFile file, int offset)

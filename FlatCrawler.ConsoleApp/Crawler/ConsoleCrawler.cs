@@ -327,6 +327,10 @@ public sealed class ConsoleCrawler
                         ? $"Max field count is {max} @ entry index {index}"
                         : "No nodes have a detectable field count.");
                     return CrawlResult.Silent;
+
+                case "v":
+                    PrintProtectedRanges();
+                    return CrawlResult.Silent;
                 #endregion
 
                 case "up":
@@ -357,6 +361,48 @@ public sealed class ConsoleCrawler
             Console.WriteLine(ex);
             Console.ResetColor();
             return CrawlResult.Error;
+        }
+    }
+
+    private void PrintProtectedRanges()
+    {
+        const bool DisplaySubRanges = true;
+        int totalBytes = FbFile.Data.Length;
+        int dataSize = FbFile.Data.Length;
+
+        var missingDataRanges = new List<DataRange>();
+        int lastRangeEnd = 0;
+        foreach (var range in FbFile.ProtectedDataRanges)
+        {
+            if (!DisplaySubRanges && range.IsSubRange)
+                continue;
+
+            var str = $"Found '{range.Description,-26}' at Range: {range}";
+            Console.WriteLine(FlatBufferPrinter.GetDepthPadded(str, range.IsSubRange ? 1 : 0));
+
+            if (!range.IsSubRange)
+            {
+                dataSize -= range.Length;
+
+                if (lastRangeEnd != range.Start)
+                    missingDataRanges.Add(new DataRange(lastRangeEnd..range.Start));
+
+                lastRangeEnd = range.End;
+            }
+        }
+
+
+        if (lastRangeEnd != totalBytes)
+            missingDataRanges.Add(new DataRange(lastRangeEnd..totalBytes));
+
+        Console.WriteLine($"Total data size: {totalBytes} bytes");
+        Console.WriteLine($"Data accounted for: {totalBytes - dataSize} bytes (unaccounted: {dataSize} bytes)");
+
+        foreach (var missingRange in missingDataRanges)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Found missing data at Range: {missingRange}");
+            Console.ForegroundColor = ConsoleColor.White;
         }
     }
 

@@ -7,11 +7,16 @@ namespace FlatCrawler.Lib;
 /// Node that contains a serialized schema object.
 /// </summary>
 /// <remarks>For an array (table), see <see cref="FlatBufferTable{T}"/></remarks>
-public sealed record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
+public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
 {
+    public const int HeaderSize = sizeof(int);
+    private DataRange NodePtrMemory => new(Offset..(Offset + Size), $"{TypeName} Ptr (@ 0x{DataTableOffset:X})", true);
+    private DataRange DataTableMemory => new(DataTableOffset..(DataTableOffset + VTable.DataTableLength), "Data Table");
+    private DataRange VTablePtrMemory => new(DataTableOffset..(DataTableOffset + HeaderSize), $"VTable Ptr (@ 0x{VTableOffset:X})", true);
+
     public FBClass ObjectClass => (FBClass)FieldInfo.Type;
 
-    private FlatBufferObject(int offset, VTable vTable, int dataTableOffset, FlatBufferNode parent) :
+    protected FlatBufferObject(int offset, VTable vTable, int dataTableOffset, FlatBufferNode parent) :
         base(offset, vTable, dataTableOffset, parent)
     {
         FieldInfo = new FBFieldInfo { Type = new FBClass(FbFile) };
@@ -23,12 +28,33 @@ public sealed record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
         UnRegisterObjectClass();
     }
 
-    public override void TrackChildFieldNode(int fieldIndex, ReadOnlySpan<byte> data, TypeCode code, bool asArray, FlatBufferNode node)
+    public override void TrackChildFieldNode(int fieldIndex, ReadOnlySpan<byte> data, TypeCode code, bool asArray, FlatBufferNode childNode)
     {
-        ObjectClass.SetMemberType(fieldIndex, data, code, asArray);
+        ObjectClass.SetMemberType(this, fieldIndex, data, code, asArray);
 
-        Fields[fieldIndex] = node;
-        node.TrackFieldInfo(ObjectClass.Members[fieldIndex]);
+        ref var member = ref Fields[fieldIndex];
+        if (member != null)
+            member.UnRegisterMemory();
+
+        member = childNode;
+        childNode.TrackFieldInfo(ObjectClass.Members[fieldIndex]);
+        childNode.RegisterMemory();
+    }
+
+    public override void RegisterMemory()
+    {
+        //FbFile.SetProtectedMemory(NodePtrMemory);
+        FbFile.SetProtectedMemory(DataTableMemory);
+        FbFile.SetProtectedMemory(VTablePtrMemory);
+        ObjectClass.RegisterMemory();
+    }
+
+    public override void UnRegisterMemory()
+    {
+        //FbFile.RemoveProtectedMemory(NodePtrMemory);
+        FbFile.RemoveProtectedMemory(DataTableMemory);
+        FbFile.RemoveProtectedMemory(VTablePtrMemory);
+        ObjectClass.UnRegisterMemory();
     }
 
     public override void TrackFieldInfo(FBFieldInfo sharedInfo)
@@ -38,10 +64,10 @@ public sealed record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
         RegisterObjectClass();
     }
 
-    public override void TrackType(FBType classType)
+    public override void TrackType(FBFieldInfo sharedInfo)
     {
         UnRegisterObjectClass();
-        FieldInfo = FieldInfo with { Type = classType };
+        FieldInfo = FieldInfo with { Type = sharedInfo.Type, Size = sharedInfo.Size };
         RegisterObjectClass();
     }
 
@@ -79,9 +105,13 @@ public sealed record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
         Debug.WriteLine($"Changing Member Type: {e.MemberIndex} {e.OldType} -> {e.NewType}");
         if (HasField(e.MemberIndex))
         {
-            var node = ReadNode(e.MemberIndex, e.Data, e.NewType.Type, e.FieldInfo.IsArray);
-            Fields[e.MemberIndex] = node;
-            node.TrackFieldInfo(e.FieldInfo);
+            ref var member = ref Fields[e.MemberIndex];
+            if (member != null)
+                member.UnRegisterMemory();
+
+            member = ReadNode(e.MemberIndex, e.Data, e.NewType.Type, e.FieldInfo.IsArray);
+            member.TrackFieldInfo(e.FieldInfo);
+            member.RegisterMemory();
         }
     }
 

@@ -38,6 +38,8 @@ public sealed class VTable
 
     public int RefCount { get; set; } = 0;
 
+    public DataRange VTableMemory => new(Location..(Location + VTableLength), "VTable");
+
     public VTable(FlatBufferFile file, int offset)
     {
         Location = offset;
@@ -55,6 +57,8 @@ public sealed class VTable
 
         if (!MemoryUtil.IsAligned((uint)(Location + VTableLength), SizeOfField))
             throw new AccessViolationException("Invalid VTable, VTable is not aligned.");
+
+        file.CheckAccessViolation(VTableMemory);
 
         DataTableLength = ReadInt16LittleEndian(data[SizeOfVTableLength..]);
         var fieldCount = (VTableLength - HeaderSize) / SizeOfField;
