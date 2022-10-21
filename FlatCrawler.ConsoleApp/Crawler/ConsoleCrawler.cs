@@ -366,6 +366,21 @@ public sealed class ConsoleCrawler
 
     private void PrintProtectedRanges()
     {
+        bool IsAlignmentPadding(DataRange missingRange, int lastRangeEnd)
+        {
+            // If it's 2 bytes, it's probably padding. Check alignment to 4 bytes.
+            // TODO: Should probably also validate that the range is actually for a data table.
+            // TODO: It seems VTables get right-aligned (left padded) to the nearest 4 byte boundry
+
+            if (missingRange.Length == 2 && !MemoryUtil.IsAligned((uint)lastRangeEnd, 4))
+            {
+                Console.WriteLine($"Found '{"Alignment Padding",-26}' at Range: {missingRange}");
+                return true;
+            }
+
+            return false;
+        }
+
         const bool DisplaySubRanges = true;
         int totalBytes = FbFile.Data.Length;
         int dataSize = FbFile.Data.Length;
@@ -380,17 +395,10 @@ public sealed class ConsoleCrawler
                 {
                     var missingRange = new DataRange(lastRangeEnd..range.Start);
 
-                    // If it's 2 bytes, it's probably padding. Check alignment to 4 bytes.
-                    // TODO: Should probably also validate that the range is actually for a data table.
-                    // TODO: It seems VTables get right-aligned to the nearest 4 byte boundry
-                    if (missingRange.Length == 2 && !MemoryUtil.IsAligned((uint)lastRangeEnd, 4))
-                    {
-                        Console.WriteLine($"Found '{"Padding",-26}' at Range: {missingRange}");
-                    }
+                    if (IsAlignmentPadding(missingRange, lastRangeEnd))
+                        dataSize -= missingRange.Length;
                     else
-                    {
                         missingDataRanges.Add(missingRange);
-                    }
                 }
 
                 dataSize -= range.Length;
@@ -404,9 +412,14 @@ public sealed class ConsoleCrawler
             Console.WriteLine(FlatBufferPrinter.GetDepthPadded(str, range.IsSubRange ? 1 : 0));
         }
 
-
         if (lastRangeEnd != totalBytes)
-            missingDataRanges.Add(new DataRange(lastRangeEnd..totalBytes));
+        {
+            var missingRange = new DataRange(lastRangeEnd..totalBytes);
+            if (IsAlignmentPadding(missingRange, lastRangeEnd))
+                dataSize -= missingRange.Length;
+            else
+                missingDataRanges.Add(missingRange);
+        }
 
         Console.WriteLine($"Total data size: {totalBytes} bytes");
         Console.WriteLine($"Data accounted for: {totalBytes - dataSize} bytes (unaccounted: {dataSize} bytes)");
@@ -414,7 +427,7 @@ public sealed class ConsoleCrawler
         foreach (var missingRange in missingDataRanges)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"Found missing data at Range: {missingRange}");
+            Console.WriteLine($"Found unknown data at Range: {missingRange}");
             Console.ForegroundColor = ConsoleColor.White;
         }
     }
