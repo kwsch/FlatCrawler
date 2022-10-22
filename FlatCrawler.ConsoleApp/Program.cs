@@ -17,7 +17,7 @@ internal static class Program
     {
         while (true)
         {
-            Console.WriteLine("Type \"open\" (no-quotes) and paste the path of the FlatBuffer you would like to analyze");
+            Console.WriteLine("Type \"open\" (no-quotes) and paste the path of the FlatBuffer you would like to analyze.");
             Console.Write(">>> ");
             var cmd = Console.ReadLine();
             if (cmd is not { } x)
@@ -32,6 +32,18 @@ internal static class Program
                 Console.WriteLine("Ripping...");
                 var src = GetFileNameFromCommandLineInput(x[(rip.Length + 1)..].Trim());
                 FileAnalysis.IterateAndDump(src);
+                Console.WriteLine("Done.");
+                continue;
+            }
+
+            const string analyze = "analyze";
+            if (x.StartsWith(analyze, StringComparison.InvariantCultureIgnoreCase))
+            {
+                Console.WriteLine("Analyzing...");
+                var src = GetFileNameFromCommandLineInput(x[(analyze.Length + 1)..].Trim());
+                var dst = FileAnalysis.GetExecutableAnalysisDumpFolder();
+                var settings = new FileAnalysisSettings(src, dst) { DumpIndividualSchemaAnalysis = false };
+                FileAnalysis.IterateAndDumpSame(Console.Out, settings);
                 Console.WriteLine("Done.");
                 continue;
             }

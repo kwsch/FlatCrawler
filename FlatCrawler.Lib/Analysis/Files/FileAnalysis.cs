@@ -23,9 +23,7 @@ public static class FileAnalysis
         if (string.IsNullOrEmpty(dest))
         {
             // Set the destination to the executable's directory, with a subfolder named FlatAnalysis.
-            var entry = System.Reflection.Assembly.GetExecutingAssembly().Location;
-            var dir = Path.GetDirectoryName(entry);
-            dest = Path.Combine(dir ?? string.Empty, "FlatAnalysis");
+            dest = GetExecutableAnalysisDumpFolder();
         }
 
         var settings = new FileAnalysisSettings(path, dest);
@@ -69,6 +67,13 @@ public static class FileAnalysis
         // Dump the results to a file.
         var outputResultsPath = Path.Combine(settings.OutputPath, settings.AllResultOutputFileName);
         ExportMetadata(results, outputResultsPath);
+    }
+
+    public static string GetExecutableAnalysisDumpFolder()
+    {
+        var entry = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        var dir = Path.GetDirectoryName(entry);
+        return Path.Combine(dir ?? string.Empty, "FlatAnalysis");
     }
 
     public static void IterateAndDumpSame(TextWriter sw, FileAnalysisSettings settings)
