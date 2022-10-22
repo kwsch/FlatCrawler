@@ -23,6 +23,8 @@ public abstract record FlatBufferNodeField : FlatBufferNode, IFieldNode
     /// <summary> All explored child nodes for this parent node. Null if unexplored. </summary>
     protected FlatBufferNode?[] Fields { get; set; }
 
+    public FieldOrder FieldOrder { get; set; }
+
     /// <summary> All explored child nodes for this parent node (immutable). Null if unexplored. </summary>
     public IReadOnlyList<FlatBufferNode?> AllFields => Fields;
 
