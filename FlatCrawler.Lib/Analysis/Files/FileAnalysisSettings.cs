@@ -23,7 +23,7 @@ public sealed record FileAnalysisSettings(string InputPath, string OutputPath) :
     /// <summary>
     /// Relative file name of the output file that contains all result record lines.
     /// </summary>
-    public string AllResultOutputFileName { get; init; } = "AllFlatBufferMetadata.txt";
+    public string AllResultOutputFileName { get; init; } = "AllFlatBufferMetadata_{0}.txt";
 
     /// <summary>
     /// Export a schema dump file for each file analyzed.
@@ -46,9 +46,24 @@ public sealed record FileAnalysisSettings(string InputPath, string OutputPath) :
     public int MaxRecursionDepth { get; init; } = 5;
 
     /// <summary>
-    /// Gets the full path to the output file that contains all schema analysis lines.
+    /// Gets the full path to the output file that contains individual schema analysis lines.
     /// </summary>
     /// <param name="fileName">Full source file name</param>
     /// <returns>Full destination file name</returns>
-    public string GetOutputPath(string fileName) => Path.Combine(OutputPath, string.Format(SchemaDumpFormat, Path.GetFileName(fileName)));
+    public string GetOutputPath(string fileName)
+    {
+        var file = string.Format(SchemaDumpFormat, Path.GetFileName(fileName));
+        return Path.Combine(OutputPath, file);
+    }
+
+    /// <summary>
+    /// Gets the full path to the output file that contains all schema analysis lines.
+    /// </summary>
+    /// <param name="extension">File Extension</param>
+    /// <returns>Full destination file name</returns>
+    public string GetOutputPathMetadata(string extension)
+    {
+        var file = string.Format(AllResultOutputFileName, extension);
+        return Path.Combine(OutputPath, file);
+    }
 }

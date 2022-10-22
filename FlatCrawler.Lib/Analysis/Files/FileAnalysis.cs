@@ -65,8 +65,7 @@ public static class FileAnalysis
         }
 
         // Dump the results to a file.
-        var outputResultsPath = Path.Combine(settings.OutputPath, settings.AllResultOutputFileName);
-        ExportMetadata(results, outputResultsPath);
+        ExportMetadata(results, settings);
     }
 
     public static string GetExecutableAnalysisDumpFolder()
@@ -97,24 +96,29 @@ public static class FileAnalysis
         RecursiveDump(node, file.Data, analysis.Fields, sw, ref hash, settings);
     }
 
-    private static void ExportMetadata(IEnumerable<FileAnalysisResult> results, string filePath)
+    private static void ExportMetadata(IEnumerable<FileAnalysisResult> results, FileAnalysisSettings settings)
     {
-        using var swResults = File.CreateText(filePath);
-        var ordered = results.GroupBy(z => z.FieldCount).OrderBy(z => z.Key);
-        foreach (var fc in ordered)
+        var byExtension = results.GroupBy(z => Path.GetExtension(z.FileName));
+        foreach (var fileType in byExtension)
         {
-            swResults.WriteLine($"Field count: {fc.Key}");
-            var entries = fc.GroupBy(z => z.Hash);
-            foreach (var entry in entries)
+            var filePath = settings.GetOutputPathMetadata(fileType.Key);
+            using var swResults = File.CreateText(filePath);
+            var ordered = fileType.GroupBy(z => z.FieldCount).OrderBy(z => z.Key);
+            foreach (var fc in ordered)
             {
-                swResults.WriteLine($"\tHash: {entry.Key}");
-                var reordered = entry
-                    .OrderBy(z => z.FileName)
-                    .ThenBy(z => z.Path);
-                foreach (var result in reordered)
-                    swResults.WriteLine($"\t\t{result}");
+                swResults.WriteLine($"Field count: {fc.Key}");
+                var entries = fc.GroupBy(z => z.Hash);
+                foreach (var entry in entries)
+                {
+                    swResults.WriteLine($"\tHash: {entry.Key}");
+                    var reordered = entry
+                        .OrderBy(z => z.FileName)
+                        .ThenBy(z => z.Path);
+                    foreach (var result in reordered)
+                        swResults.WriteLine($"\t\t{result}");
+                }
+                swResults.WriteLine();
             }
-            swResults.WriteLine();
         }
     }
 
