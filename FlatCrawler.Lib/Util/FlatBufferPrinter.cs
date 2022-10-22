@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace FlatCrawler.Lib;
 
 public sealed class FlatBufferPrinter
 {
-    private readonly List<string> Output = new();
-
     public int MaxPrefixTable { get; init; } = 7;
     public int MaxSuffixTable { get; init; } = 3;
     public string Unexplored { get; init; } = "???";
@@ -15,25 +14,16 @@ public sealed class FlatBufferPrinter
     public string RootName { get; init; } = "Root";
     public int MaxLengthBeginTrim { get; set; } = 20;
 
-    public IEnumerable<string> GeneratePrint(FlatBufferNode node)
-    {
-        Output.Clear();
-        PrintLocation(node);
-        return Output;
-    }
-
-    private void PrintLocation(FlatBufferNode node)
+    public void GeneratePrint(FlatBufferNode node, TextWriter tw)
     {
         var ll = new LinkedList<FlatBufferNode>();
-        ll.AddFirst(node);
+        var root = ll.AddFirst(node);
         var parent = node.Parent;
         while (parent is { })
         {
-            ll.AddFirst(parent);
+            root = ll.AddFirst(parent);
             parent = parent.Parent;
         }
-
-        var root = ll.First!;
 
         static string GetRootHeaderDisplay(FlatBufferRoot r) => $" ({r.Magic ?? "No Magic Identifier"})";
         var rootNode = root.Value;
@@ -42,10 +32,11 @@ public sealed class FlatBufferPrinter
             rootName += GetRootHeaderDisplay(r);
         if (ReferenceEquals(node, rootNode))
             rootName += $" {LinkedNode}";
-        Output.Add(rootName);
+        tw.WriteLine(rootName);
 
         var lines = BuildTree(root);
-        Output.AddRange(lines);
+        foreach (var line in lines)
+            tw.WriteLine(line);
     }
 
     private List<string> BuildTree(LinkedListNode<FlatBufferNode> linkNode)
