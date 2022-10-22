@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 namespace FlatCrawler.Lib;
 
@@ -21,15 +20,13 @@ public sealed class FlatBufferFile
 
     public bool IsValid => GetIsSizeValid(Data);
 
-    public FlatBufferFile(string path) : this(File.ReadAllBytes(path)) { }
-    public FlatBufferFile(ReadOnlySpan<byte> data)
-    {
-        _data = data.ToArray();
-    }
+    public FlatBufferFile(string path) : this(File.ReadAllBytes(path).AsMemory()) { }
+    public FlatBufferFile(byte[] data) : this(data.AsMemory()) { }
+    public FlatBufferFile(ReadOnlyMemory<byte> data) => _data = data;
 
     public void SetProtectedMemory(DataRange range)
     {
-        CheckAccessViolation(range);
+        EnsureNoAccessViolation(range);
         ProtectedDataRanges.Add(range);
     }
 
@@ -41,18 +38,31 @@ public sealed class FlatBufferFile
     /// <summary>
     /// Check if any of the protected ranges overlap with the provided range
     /// </summary>
-    /// <param name="range">The range to check</param>
+    /// <param name="input">The range to check</param>
     /// <exception cref="AccessViolationException">When the range overlaps protected memory</exception>
-    public void CheckAccessViolation(DataRange range)
+    public void EnsureNoAccessViolation(DataRange input)
     {
-        if (range.IsSubRange) // Ignore sub ranges
-            return;
-
-        var overlappingRange = ProtectedDataRanges.FirstOrDefault(x => !x.IsSubRange && x.End > range.Start && x.Start < range.End);
-
+        var overlappingRange = FindFirstOverlapping(input);
         if (overlappingRange != default)
-            throw new AccessViolationException($"Data range {range} ({range.Description}), would overlap protected memory at: {overlappingRange} ({overlappingRange.Description})");
+            throw new AccessViolationException($"Data range {input} ({input.Description}), would overlap protected memory at: {overlappingRange} ({overlappingRange.Description})");
     }
+
+    public bool IsAccessViolation(DataRange range) => FindFirstOverlapping(range) != default;
+
+    private DataRange FindFirstOverlapping(DataRange input)
+    {
+        if (input.IsSubRange) // Ignore sub ranges
+            return default;
+
+        foreach (var protect in ProtectedDataRanges)
+        {
+            if (IsOverlapping(input, protect))
+                return protect;
+        }
+        return default;
+    }
+
+    private static bool IsOverlapping(DataRange input, DataRange exist) => !exist.IsSubRange && exist.End > input.Start && exist.Start < input.End;
 
     /// <summary>
     /// Read the VTable at <paramref name="offset"/>.

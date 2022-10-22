@@ -58,7 +58,7 @@ public sealed class VTable
         if (!MemoryUtil.IsAligned((uint)(Location + VTableLength), SizeOfField))
             throw new AccessViolationException("Invalid VTable, VTable is not aligned.");
 
-        file.CheckAccessViolation(VTableMemory);
+        file.EnsureNoAccessViolation(VTableMemory);
 
         DataTableLength = ReadInt16LittleEndian(data[SizeOfVTableLength..]);
         var fieldCount = (VTableLength - HeaderSize) / SizeOfField;

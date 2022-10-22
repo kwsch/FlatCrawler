@@ -42,7 +42,7 @@ public static class FileAnalysis
 
         var files = Directory.EnumerateFiles(settings.InputPath, settings.SearchPattern, SearchOption.AllDirectories);
 
-        Span<byte> buffer = new byte[settings.MaxPeekSize].AsSpan();
+        var buffer = new byte[settings.MaxPeekSize].AsMemory();
         List<FileAnalysisResult> results = new();
 
         foreach (var file in files)
@@ -113,7 +113,7 @@ public static class FileAnalysis
         }
     }
 
-    private static bool TryAnalyzeFile(FileAnalysisSettings settings, string filePath, ICollection<FileAnalysisResult> results, Span<byte> buffer)
+    private static bool TryAnalyzeFile(FileAnalysisSettings settings, string filePath, ICollection<FileAnalysisResult> results, Memory<byte> buffer)
     {
         using var fs = File.OpenRead(filePath);
         if (fs.Length > buffer.Length)
@@ -121,7 +121,7 @@ public static class FileAnalysis
 
         var length = Math.Min(buffer.Length, fs.Length);
         var data = buffer[..(int)length];
-        var read = fs.Read(data);
+        var read = fs.Read(data.Span);
 
         fs.Dispose();
         if (read != length)

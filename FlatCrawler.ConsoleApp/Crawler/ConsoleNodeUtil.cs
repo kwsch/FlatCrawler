@@ -14,8 +14,6 @@ public static class ConsoleNodeUtil
     public static void PrintTree(this FlatBufferNode node)
     {
         var printer = new FlatBufferPrinter();
-        var result = printer.GeneratePrint(node);
-        foreach (var line in result)
-            Console.WriteLine(line);
+        printer.GeneratePrint(node, Console.Out);
     }
 }

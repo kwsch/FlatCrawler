@@ -16,10 +16,11 @@ public static class TableDump
         DumpFoodTable(Resources.pokecamp_kinomi_table, 7, "kinomi");
     }
 
-    private static void DumpFoodTable(ReadOnlySpan<byte> data, int cellCount, string name)
+    private static void DumpFoodTable(ReadOnlyMemory<byte> mem, int cellCount, string name)
     {
-        var file = new FlatBufferFile(data);
+        var file = new FlatBufferFile(mem);
         var root = FlatBufferRoot.Read(file, 0);
+        var data = mem.Span;
         var f1 = root.ReadAsTable(data, 1); // union table, yuck
 
         DumpFoodTable(f1, data, cellCount, name);
