@@ -52,8 +52,13 @@ public sealed record FileAnalysisSettings(string InputPath, string OutputPath) :
     /// <returns>Full destination file name</returns>
     public string GetOutputPath(string fileName)
     {
+        var ext = Path.GetExtension(fileName);
+        var folder = Path.Combine(OutputPath, ext);
+        if (!Directory.Exists(folder))
+            Directory.CreateDirectory(folder);
+
         var file = string.Format(SchemaDumpFormat, Path.GetFileName(fileName));
-        return Path.Combine(OutputPath, file);
+        return Path.Combine(folder, file);
     }
 
     /// <summary>
@@ -64,6 +69,6 @@ public sealed record FileAnalysisSettings(string InputPath, string OutputPath) :
     public string GetOutputPathMetadata(string extension)
     {
         var file = string.Format(AllResultOutputFileName, extension);
-        return Path.Combine(OutputPath, file);
+        return Path.Combine(OutputPath, extension, file);
     }
 }
