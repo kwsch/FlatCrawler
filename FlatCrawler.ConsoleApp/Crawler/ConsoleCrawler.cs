@@ -458,6 +458,11 @@ public sealed class ConsoleCrawler
             var quality = sameFieldCount ? "present in all" : fieldCount == 1 ? "optional" : "varied";
 
             Console.WriteLine($"Type {type:X} has {fieldCount} fields ({quality}), at indexes: {string.Join(" ", indexes)}");
+
+            var analysis = result.AnalyzeNodesWithType(type, data);
+            int hash = 0;
+            var settings = new SchemaAnalysisSettings();
+            FileAnalysis.RecursiveDump(result.Groups[type][0].Node, data, analysis.Fields, Console.Out, ref hash, settings);
         }
     }
 }

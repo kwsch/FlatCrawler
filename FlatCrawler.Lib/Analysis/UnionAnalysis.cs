@@ -69,4 +69,11 @@ public sealed record UnionAnalysisResult(Dictionary<byte, FlatBufferUnionNodeSum
     public IEnumerable<int> GetIndexes(byte typeCode) => Groups[typeCode].Select(z => z.Index);
     public int MaxFieldCount(byte typeCode) => Groups[typeCode].Max(z => z.FieldCount);
     public bool SameFieldCount(byte typeCode) => Groups[typeCode].Select(z => z.FieldCount).Distinct().Count() == 1;
+
+    public FieldAnalysisResult AnalyzeNodesWithType(byte type, ReadOnlySpan<byte> data)
+    {
+        var summaries = Groups[type];
+        var fields = summaries.Select(z => z.Node).Cast<FlatBufferNodeField>().ToArray();
+        return FieldAnalysis.AnalyzeFields(data, fields);
+    }
 }
