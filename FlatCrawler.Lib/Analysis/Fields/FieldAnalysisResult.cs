@@ -60,26 +60,23 @@ public sealed class FieldAnalysisResult
         System.Diagnostics.Debug.Assert(GetIsIncreasingSize(presentFields));
 
         int min = 1;
-        foreach (var field in presentFields)
+        foreach ((int index, _, int maxSize) in presentFields)
         {
-            var i = field.Index;
-            var max = field.Size;
-
-            bool isUncertain = !GetIsSizeExact(presentFields, i);
+            bool isUncertain = !GetIsSizeExact(presentFields, index);
             // Scan the field size and double check results from prior calls.
-            if (!Fields.TryGetValue(i, out var check))
-                Fields.Add(i, new(new(min, max, isUncertain)));
+            if (!Fields.TryGetValue(index, out var check))
+                Fields.Add(index, new(new(min, maxSize, isUncertain)));
             else
-                check.Size.Observe(min, max, isUncertain);
+                check.Size.Observe(min, maxSize, isUncertain);
 
             // Ascending size, so the next iteration will be at least this size.
-            min = max;
+            min = maxSize;
         }
     }
 
-    private static bool GetIsSizeExact(VTableFieldInfo[] presentFields, int i)
+    private static bool GetIsSizeExact(VTableFieldInfo[] presentFields, int fieldIndex)
     {
-        var index = Array.FindIndex(presentFields, z => z.Index == i);
+        var index = Array.FindIndex(presentFields, z => z.Index == fieldIndex);
         if (index == -1)
             throw new InvalidOperationException("Field not found in VTable.");
 

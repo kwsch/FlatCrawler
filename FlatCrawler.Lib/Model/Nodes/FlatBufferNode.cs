@@ -1,3 +1,5 @@
+using System;
+
 namespace FlatCrawler.Lib;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace FlatCrawler.Lib;
 /// <param name="Parent">Parent that owns this child node.</param>
 public abstract record FlatBufferNode(int Offset, FlatBufferNode? Parent = null)
 {
-    public FlatBufferFile FbFile => FlatBufferFile.Instance;
+    public virtual FlatBufferFile FbFile => Parent?.FbFile ?? throw new InvalidOperationException($"{nameof(FlatBufferNode)} is not attached to a {nameof(FlatBufferFile)}");
 
     /// <summary> Parent that owns this child node. </summary>
     public readonly FlatBufferNode? Parent = Parent;
@@ -21,7 +23,7 @@ public abstract record FlatBufferNode(int Offset, FlatBufferNode? Parent = null)
     /// <summary>
     /// The size of the node in bytes
     /// </summary>
-    public int Size => FieldInfo.Size;
+    protected int Size => FieldInfo.Size;
 
     /// <summary> Tagged name of the node. </summary>
     public virtual string Name { get => FieldInfo.Name; set => FieldInfo.Name = value; }
@@ -42,13 +44,13 @@ public abstract record FlatBufferNode(int Offset, FlatBufferNode? Parent = null)
     /// <summary>
     /// Override the local type with a shared type
     /// </summary>
-    /// <param name="type">The shared FBType</param>
+    /// <param name="sharedInfo">The shared field information</param>
     public virtual void TrackType(FBFieldInfo sharedInfo) => FieldInfo = FieldInfo with { Type = sharedInfo.Type, Size = sharedInfo.Size };
 
     /// <summary>
     /// Override the local field info with a shared field
     /// </summary>
-    /// <param name="sharedInfo">The shared FBFieldInfo</param>
+    /// <param name="sharedInfo">The shared field information</param>
     public virtual void TrackFieldInfo(FBFieldInfo sharedInfo) => FieldInfo = sharedInfo;
 
     public virtual void RegisterMemory() { }

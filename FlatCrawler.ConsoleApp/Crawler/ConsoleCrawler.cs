@@ -381,7 +381,7 @@ public sealed class ConsoleCrawler
             return false;
         }
 
-        const bool DisplaySubRanges = true;
+        bool DisplaySubRanges = true; // TODO: GLOBAL SETTING?
         int totalBytes = FbFile.Data.Length;
         int dataSize = FbFile.Data.Length;
 
@@ -389,6 +389,9 @@ public sealed class ConsoleCrawler
         int lastRangeEnd = 0;
         foreach (var range in FbFile.ProtectedDataRanges)
         {
+            if (range.IsSubRange && !DisplaySubRanges)
+                continue;
+
             if (!range.IsSubRange)
             {
                 if (lastRangeEnd != range.Start)
@@ -404,9 +407,6 @@ public sealed class ConsoleCrawler
                 dataSize -= range.Length;
                 lastRangeEnd = range.End;
             }
-
-            if (!DisplaySubRanges && range.IsSubRange)
-                continue;
 
             var str = $"Found '{range.Description,-26}' at Range: {range}";
             Console.WriteLine(FlatBufferPrinter.GetDepthPadded(str, range.IsSubRange ? 1 : 0));

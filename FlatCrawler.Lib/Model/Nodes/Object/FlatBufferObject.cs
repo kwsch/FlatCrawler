@@ -16,10 +16,10 @@ public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
 
     public FBClass ObjectClass => (FBClass)FieldInfo.Type;
 
-    protected FlatBufferObject(int offset, VTable vTable, int dataTableOffset, FlatBufferNode parent) :
+    protected FlatBufferObject(FlatBufferFile file, VTable vTable, int offset, int dataTableOffset, FlatBufferNode? parent) :
         base(offset, vTable, dataTableOffset, parent)
     {
-        FieldInfo = new FBFieldInfo { Type = new FBClass(FbFile) };
+        FieldInfo = new FBFieldInfo { Type = new FBClass(file) };
         RegisterObjectClass();
     }
 
@@ -33,8 +33,7 @@ public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
         ObjectClass.SetMemberType(this, fieldIndex, data, code, asArray);
 
         ref var member = ref Fields[fieldIndex];
-        if (member != null)
-            member.UnRegisterMemory();
+        member?.UnRegisterMemory();
 
         member = childNode;
         childNode.TrackFieldInfo(ObjectClass.Members[fieldIndex]);
@@ -103,16 +102,15 @@ public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
     public void OnMemberTypeChanged(MemberTypeChangedArgs e)
     {
         Debug.WriteLine($"Changing Member Type: {e.MemberIndex} {e.OldType} -> {e.NewType}");
-        if (HasField(e.MemberIndex))
-        {
-            ref var member = ref Fields[e.MemberIndex];
-            if (member != null)
-                member.UnRegisterMemory();
+        if (!HasField(e.MemberIndex))
+            return;
 
-            member = ReadNode(e.MemberIndex, e.Data, e.NewType.Type, e.FieldInfo.IsArray);
-            member.TrackFieldInfo(e.FieldInfo);
-            member.RegisterMemory();
-        }
+        ref var member = ref Fields[e.MemberIndex];
+        member?.UnRegisterMemory();
+
+        member = ReadNode(e.MemberIndex, e.Data, e.NewType.Type, e.FieldInfo.IsArray);
+        member.TrackFieldInfo(e.FieldInfo);
+        member.RegisterMemory();
     }
 
     public static FlatBufferObject Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data)
@@ -130,7 +128,7 @@ public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
         // Ensure VTable is correct
         if (vTableOffset < tableOffset && (vTableOffset + vTable.VTableLength) > tableOffset)
             throw new IndexOutOfRangeException("VTable overflows into Data Table. Not a valid VTable.");
-        return new FlatBufferObject(offset, vTable, tableOffset, parent);
+        return new FlatBufferObject(parent.FbFile, vTable, offset, tableOffset, parent);
     }
 
     public static FlatBufferObject Read(FlatBufferNodeField parent, int fieldIndex, ReadOnlySpan<byte> data)

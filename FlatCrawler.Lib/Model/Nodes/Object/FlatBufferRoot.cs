@@ -14,18 +14,19 @@ namespace FlatCrawler.Lib;
 public sealed record FlatBufferRoot : FlatBufferObject
 {
     private const int MaxMagicLength = 4;
-    private const string NO_MAGIC = "NO MAGIC";
 
-    public string Magic { get; }
-    public int MagicLength { get; }
+    public override FlatBufferFile FbFile { get; }
+    public string? Magic { get; }
+
     public override string TypeName { get => "Root"; set { } }
-    private DataRange NodeMemory => new(0..Size, TypeName);
-
-    private FlatBufferRoot(VTable vTable, string magic, int dataTableOffset) :
-        base(0, vTable, dataTableOffset, null!)
+    private DataRange NodeMemory => new(..Size, TypeName);
+    private int MagicLength => Magic is null ? 0 : MaxMagicLength;
+    
+    private FlatBufferRoot(FlatBufferFile file, VTable vTable, string? magic, int dataTableOffset) :
+        base(file, vTable, 0, dataTableOffset, null)
     {
+        FbFile = file;
         Magic = magic;
-        MagicLength = ((magic == NO_MAGIC) ? 0 : magic.Length);
         FieldInfo = FieldInfo with { Size = (HeaderSize + MagicLength) };
         RegisterMemory();
     }
@@ -38,26 +39,41 @@ public sealed record FlatBufferRoot : FlatBufferObject
 
     public static FlatBufferRoot Read(FlatBufferFile file, int offset)
     {
-        int dataTableOffset = ReadInt32LittleEndian(file.Data[offset..]) + offset;
-        var magic = ((dataTableOffset == HeaderSize) ? NO_MAGIC : ReadMagic(offset + HeaderSize, file.Data));
+        var data = file.Data;
+        int dataTableOffset = ReadInt32LittleEndian(data[offset..]) + offset;
+        var vTableOffset = GetVtableOffset(dataTableOffset, data, true);
+
+        // Check if there's 4 bytes between the Data Table Pointer and the start of the VTable.
+        // If there's 4 bytes, we might have a Header Magic present.
+        var bytesAvailableForHeader = vTableOffset - HeaderSize - offset;
+        var magic = ((bytesAvailableForHeader < MaxMagicLength) ? null : ReadMagic(offset + HeaderSize, data));
 
         // Read VTable
-        var vTableOffset = GetVtableOffset(dataTableOffset, file.Data, true);
         var vTable = file.PeekVTable(vTableOffset);
         file.RegisterVTable(vTable);
-        return new FlatBufferRoot(vTable, magic, dataTableOffset);
+        return new FlatBufferRoot(file, vTable, magic, dataTableOffset);
     }
 
-    private static string ReadMagic(int offset, ReadOnlySpan<byte> data)
+    private static string? ReadMagic(int offset, ReadOnlySpan<byte> data)
     {
-        var magicRegion = data.Slice(offset, 4);
+        // Identifiers must always be exactly 4 characters long.
+        // These 4 characters will end up as bytes at offsets 4-7 (inclusive) in the buffer.
+        var magicRegion = data.Slice(offset, MaxMagicLength);
         var count = GetMagicCharCount(magicRegion);
-        return count == 0 ? NO_MAGIC : Encoding.ASCII.GetString(magicRegion[..count]);
+        if (count != 4)
+            return null;
+        return Encoding.ASCII.GetString(magicRegion[..count]);
     }
 
     private static int GetMagicCharCount(ReadOnlySpan<byte> data)
     {
-        var count = data.IndexOf((byte)0);
-        return count == -1 ? MaxMagicLength : count;
+        // Return the count of ASCII readable byte chars in data.
+        int count = 0;
+        foreach (var b in data)
+        {
+            if (b is >= 0x20 and <= 0x7E)
+                count++;
+        }
+        return count;
     }
 }

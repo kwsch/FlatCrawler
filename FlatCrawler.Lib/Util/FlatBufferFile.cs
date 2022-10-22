@@ -11,15 +11,12 @@ namespace FlatCrawler.Lib;
 /// </summary>
 public sealed class FlatBufferFile
 {
-    [Obsolete("Quick and dirty static instance access to make it easier to move to the new API")]
-    public static FlatBufferFile Instance { get; private set; } = null!;
-
     // Data should never overlap with any of the data ranges in this set
     public readonly SortedSet<DataRange> ProtectedDataRanges = new();
 
     private readonly SortedDictionary<int, VTable> VTables = new();
 
-    private ReadOnlyMemory<byte> _data;
+    private readonly ReadOnlyMemory<byte> _data;
     public ReadOnlySpan<byte> Data => _data.Span;
 
     public bool IsValid => GetIsSizeValid(Data);
@@ -28,7 +25,6 @@ public sealed class FlatBufferFile
     public FlatBufferFile(ReadOnlySpan<byte> data)
     {
         _data = data.ToArray();
-        Instance = this;
     }
 
     public void SetProtectedMemory(DataRange range)

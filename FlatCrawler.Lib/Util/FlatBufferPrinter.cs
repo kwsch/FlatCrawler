@@ -24,7 +24,6 @@ public sealed class FlatBufferPrinter
 
     private void PrintLocation(FlatBufferNode node)
     {
-        Output.Add(node is FlatBufferRoot ? $"{RootName} {LinkedNode}" : RootName);
         var ll = new LinkedList<FlatBufferNode>();
         ll.AddFirst(node);
         var parent = node.Parent;
@@ -34,7 +33,18 @@ public sealed class FlatBufferPrinter
             parent = parent.Parent;
         }
 
-        var lines = BuildTree(ll.First!);
+        var root = ll.First!;
+
+        static string GetRootHeaderDisplay(FlatBufferRoot r) => $" ({r.Magic ?? "No Magic Identifier"})";
+        var rootNode = root.Value;
+        var rootName = RootName;
+        if (rootNode is FlatBufferRoot r)
+            rootName += GetRootHeaderDisplay(r);
+        if (ReferenceEquals(node, rootNode))
+            rootName += $" {LinkedNode}";
+        Output.Add(rootName);
+
+        var lines = BuildTree(root);
         Output.AddRange(lines);
     }
 
