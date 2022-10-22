@@ -57,12 +57,29 @@ public sealed class FieldAnalysisResult
             return;
 
         // Serialized FlatBuffers store smallest sized fields first (increasing width).
-        System.Diagnostics.Debug.Assert(GetIsIncreasingSize(presentFields));
+        var increase = GetIsIncreasingSize(presentFields);
+        if (!increase)
+        {
+            var decrease = GetIsDecreasingSize(presentFields);
+            if (decrease)
+            {
+                Console.WriteLine($"Node[{node.VTable.FieldInfo.Length}] at {node.Offset} has decreasing field size. Might have inlined structs.");
+                CheckSizeDecreasing(presentFields);
+                return;
+            }
 
+            Console.WriteLine($"Node[{node.VTable.FieldInfo.Length}] at {node.Offset} has neither increasing or decreasing field size. Might not be a valid VTable.");
+        }
+
+        CheckSizeIncreasing(presentFields);
+    }
+
+    private void CheckSizeIncreasing(VTableFieldInfo[] presentFields)
+    {
         int min = 1;
         foreach ((int index, _, int maxSize) in presentFields)
         {
-            bool isUncertain = !GetIsSizeExact(presentFields, index);
+            bool isUncertain = !GetIsSizeExactIncreasing(presentFields, index);
             // Scan the field size and double check results from prior calls.
             if (!Fields.TryGetValue(index, out var check))
                 Fields.Add(index, new(new(min, maxSize, isUncertain)));
@@ -74,18 +91,33 @@ public sealed class FieldAnalysisResult
         }
     }
 
-    private static bool GetIsSizeExact(VTableFieldInfo[] presentFields, int fieldIndex)
+    private void CheckSizeDecreasing(VTableFieldInfo[] presentFields)
+    {
+        foreach (var field in presentFields)
+        {
+            var index = field.Index;
+            (int min, int max) = GetIsSizeExactDecreasing(presentFields, index);
+            bool isUncertain = min != max;
+            // Scan the field size and double check results from prior calls.
+            if (!Fields.TryGetValue(index, out var check))
+                Fields.Add(index, new(new(min, max, isUncertain)));
+            else
+                check.Size.Observe(min, max, isUncertain);
+        }
+    }
+
+    private static bool GetIsSizeExactIncreasing(VTableFieldInfo[] presentFields, int fieldIndex)
     {
         var index = Array.FindIndex(presentFields, z => z.Index == fieldIndex);
         if (index == -1)
             throw new InvalidOperationException("Field not found in VTable.");
 
-        if (index == presentFields.Length - 1)
-            return false; // last field is always uncertain
-
         var info = presentFields[index];
         if ((info.Offset & 1) != 0)
             return true; // odd offset is always certain (byte)
+
+        if (index == presentFields.Length - 1)
+            return false; // last field is always uncertain
 
         if (index == 0)
             return false; // can't tell if u16 -> u32 due to padding
@@ -94,12 +126,43 @@ public sealed class FieldAnalysisResult
         return prev.Size == info.Size;
     }
 
+    private static (int Min, int Max) GetIsSizeExactDecreasing(VTableFieldInfo[] presentFields, int fieldIndex)
+    {
+        var index = Array.FindIndex(presentFields, z => z.Index == fieldIndex);
+        if (index == -1)
+            throw new InvalidOperationException("Field not found in VTable.");
+
+        var info = presentFields[index];
+        if ((info.Offset & 1) != 0)
+            return (info.Size, info.Size); // odd offset is always certain (byte)
+
+        if (index == presentFields.Length - 1)
+            return (1, info.Size); // last field is always uncertain
+
+        var next = presentFields[index + 1];
+        if (next.Size == info.Size)
+            return (info.Size, info.Size); // next field is same size, so this field is certain
+        return (next.Size, info.Size);
+    }
+
     private static bool GetIsIncreasingSize(IEnumerable<VTableFieldInfo> presentFieldsAscendingOffset)
     {
         int size = 0;
         foreach (var field in presentFieldsAscendingOffset)
         {
             if (field.Size < size)
+                return false;
+            size = field.Size;
+        }
+        return true;
+    }
+
+    private static bool GetIsDecreasingSize(IEnumerable<VTableFieldInfo> presentFieldsAscendingOffset)
+    {
+        int size = int.MaxValue;
+        foreach (var field in presentFieldsAscendingOffset)
+        {
+            if (field.Size > size)
                 return false;
             size = field.Size;
         }
