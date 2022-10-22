@@ -33,7 +33,7 @@ public static class UnionAnalysis
             var obj = node.ReadAsObject(data, 1);
             var bval = type.Value;
             var chk = new FlatBufferUnionNodeSummary(bval, index, obj);
-            node.TypeName = chk.ToString();
+            node.TypeName = bval.ToString();
 
             // add or update key if our FieldCount is new or bigger than previously noted for this union type
             if (!result.TryGetValue(bval, out var c) || c.FieldCount < chk.FieldCount)
