@@ -18,7 +18,8 @@ public static class TableDump
 
     private static void DumpFoodTable(ReadOnlySpan<byte> data, int cellCount, string name)
     {
-        FlatBufferRoot root = FlatBufferRoot.Read(0, data);
+        var file = new FlatBufferFile(data);
+        var root = FlatBufferRoot.Read(file, 0);
         var f1 = root.ReadAsTable(data, 1); // union table, yuck
 
         DumpFoodTable(f1, data, cellCount, name);

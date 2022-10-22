@@ -18,7 +18,7 @@ public static class FieldFinding
             return;
 
         const int fieldIndex = 29;
-        static bool Criteria(FlatBufferRoot root, byte[] _) => root.HasField(fieldIndex);
+        static bool Criteria(FlatBufferRoot root, FlatBufferFile _) => root.HasField(fieldIndex);
         var result = SearchUtil.FindFlatFile(folder, Criteria);
         if (result != null)
         {
@@ -37,9 +37,9 @@ public static class FieldFinding
 
         const int parentField = 4;
         const int fieldIndex = 12;
-        static bool Criteria(FlatBufferRoot root, byte[] data)
+        static bool Criteria(FlatBufferRoot root, FlatBufferFile file)
         {
-            var child = root.ReadAsObject(data, parentField);
+            var child = root.ReadAsObject(file.Data, parentField);
             return child.HasField(fieldIndex);
         }
 
@@ -60,8 +60,9 @@ public static class FieldFinding
 
         const int parentField = 0;
         const int fieldIndex = 3;
-        static bool Criteria(FlatBufferRoot root, byte[] data)
+        static bool Criteria(FlatBufferRoot root, FlatBufferFile file)
         {
+            var data = file.Data;
             var child = root.ReadAsTable(data, parentField);
             foreach (var entry in child.Entries)
             {

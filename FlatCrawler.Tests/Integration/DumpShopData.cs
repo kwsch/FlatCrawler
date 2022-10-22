@@ -13,8 +13,8 @@ public static class DumpShopData
     public static void Crawl()
     {
         var data = Resources.shop_data;
-
-        FlatBufferRoot root = FlatBufferRoot.Read(0, data);
+        var file = new FlatBufferFile(data);
+        var root = FlatBufferRoot.Read(file, 0);
         var f0 = root.ReadAsTable(data, 0);
         var f1 = root.ReadAsTable(data, 1);
         CrawlSingle(f0, data, "shop0.txt");

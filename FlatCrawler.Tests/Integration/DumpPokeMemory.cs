@@ -13,8 +13,8 @@ public static class DumpPokeMemory
     public static void Crawl()
     {
         var data = Resources.poke_memory;
-
-        FlatBufferRoot root = FlatBufferRoot.Read(0, data);
+        var file = new FlatBufferFile(data);
+        var root = FlatBufferRoot.Read(file, 0);
         var f0 = root.ReadAsTable(data, 0);
         var f1 = root.ReadAsTable(data, 1); // union table, yuck
         var f2 = root.ReadAsTable(data, 2);
