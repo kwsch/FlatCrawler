@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace FlatCrawler.Lib;
@@ -12,9 +14,9 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
     public const int EntrySize = 4;
 
     private DataRange NodePtrMemory => new(FieldOffset..(FieldOffset + Size), $"{TypeName} Ptr (@ 0x{Offset:X})", true);
-    private DataRange TableMemory => new(Offset..(DataTableOffset + Length * EntrySize), $"{TypeName} Data");
+    private DataRange TableMemory => new(Offset..(DataTableOffset + (Length * EntrySize)), $"{TypeName} Data");
     private DataRange ArrayLengthMemory => new(Offset..(Offset + HeaderSize), $"Array Length ({Length})", true);
-    private DataRange ObjectArrayMemory => new(DataTableOffset..(DataTableOffset + Length * EntrySize), $"{TypeName} Ptrs", true);
+    private DataRange ObjectArrayMemory => new(DataTableOffset..(DataTableOffset + (Length * EntrySize)), $"{TypeName} Ptrs", true);
 
     /// <summary>
     /// Absolute offset that has the raw table pointer bytes.
@@ -88,6 +90,43 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
         var dataTableOffset = arrayEntryPointerOffset + dataTablePointerShift;
 
         return FlatBufferObject.Read(arrayEntryPointerOffset, this, data, dataTableOffset);
+    }
+
+    /// <summary>
+    /// Disassociates child nodes from each other depending on their union type.
+    /// </summary>
+    public void InterpretAsUnionTable()
+    {
+        var file = FbFile;
+        var data = file.Data;
+        var unionTypeClasses = new Dictionary<byte, FBFieldInfo>();
+        foreach (var entry in Entries)
+        {
+            var typeNode = entry.ReadNodeAndTrack(0, data, TypeCode.Byte, false);
+            var type = ((FlatBufferFieldValue<byte>)typeNode).Value;
+            typeNode.Name = "UnionType";
+
+            var objectNode = entry.ReadNodeAndTrack(1, data, TypeCode.Object, false);
+            var child = (FlatBufferObject)objectNode;
+            var name = $"Union{type}";
+            if (!unionTypeClasses.TryGetValue(type, out var fieldInfo))
+            {
+                var newUnionInfo = new FBFieldInfo
+                {
+                    Name = name,
+                    Size = child.FieldInfo.Size,
+                    Type = new FBClass(file) { TypeName = name },
+                };
+                unionTypeClasses.Add(type, fieldInfo = newUnionInfo);
+            }
+            child.TrackType(fieldInfo);
+            child.Name = name;
+
+            entry.Name = name;
+        }
+
+        var types = unionTypeClasses.Select(z => z.Key).OrderBy(z => z);
+        Entries[0].TypeName = $"Union{{{string.Join(',', types)}}}";
     }
 
     public static int GetSize(int length) => (length * EntrySize) + HeaderSize; // bare minimum rough guess, considering vtable

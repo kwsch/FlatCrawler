@@ -7,7 +7,7 @@ namespace FlatCrawler.Tests;
 
 public static class SwordShieldPRMB
 {
-    public static void Export(byte[] data, string fileNamePrefix, int tableWidth)
+    public static void Export(ReadOnlyMemory<byte> data, string fileNamePrefix, int tableWidth)
     {
         var file = new FlatBufferFile(data);
         Export(file, fileNamePrefix, tableWidth);

@@ -53,7 +53,7 @@ public static class TypeCodeUtil
         "double" => TypeCode.Double,
 
         "string" or "str" => TypeCode.String,
-        "object" or "obj" or "table" => TypeCode.Object,
+        "object" or "obj" or "table" or "union" => TypeCode.Object,
         _ => Unrecognized,
     };
 

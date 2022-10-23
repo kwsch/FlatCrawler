@@ -53,7 +53,8 @@ public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
         //FbFile.RemoveProtectedMemory(NodePtrMemory);
         FbFile.RemoveProtectedMemory(DataTableMemory);
         FbFile.RemoveProtectedMemory(VTablePtrMemory);
-        ObjectClass.UnRegisterMemory();
+        if (FieldInfo.Type is FBClass c)
+            c.UnRegisterMemory();
     }
 
     public override void TrackFieldInfo(FBFieldInfo sharedInfo)
@@ -88,6 +89,12 @@ public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
     private void UnRegisterObjectClass()
     {
         ObjectClass.Observers.Remove(this);
+    }
+
+    public void DisassociateRelationships()
+    {
+        UnRegisterMemory();
+        UnRegisterObjectClass();
     }
 
     public void OnMemberCountChanged(int count)

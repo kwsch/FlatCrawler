@@ -128,6 +128,12 @@ public sealed class ConsoleCrawler
             {
                 if (!args.Contains(' '))
                 {
+                    if (args.Equals("union", StringComparison.OrdinalIgnoreCase) && node is FlatBufferTableObject fn)
+                    {
+                        fn.InterpretAsUnionTable();
+                        return CrawlResult.Update;
+                    }
+
                     node.TypeName = args.ToString();
                     return CrawlResult.Update;
                 }
@@ -366,7 +372,7 @@ public sealed class ConsoleCrawler
 
     private void PrintProtectedRanges()
     {
-        bool IsAlignmentPadding(DataRange missingRange, int lastRangeEnd)
+        static bool IsAlignmentPadding(DataRange missingRange, int lastRangeEnd)
         {
             // If it's 2 bytes, it's probably padding. Check alignment to 4 bytes.
             // TODO: Should probably also validate that the range is actually for a data table.
