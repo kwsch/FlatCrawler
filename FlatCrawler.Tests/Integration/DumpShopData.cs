@@ -9,6 +9,23 @@ namespace FlatCrawler.Tests;
 
 public static class DumpShopData
 {
+    /* Schema:
+     * root
+     * 0: shop0[]
+     * 1: shop1[]
+     *
+     * shop0
+     * 0: u64 hash
+     * 1: int[] items
+     *
+     * shop1
+     * 0: u64 hash
+     * 1: inventory[]
+     *
+     * inventory
+     * 0: int[] items
+     */
+
     [Fact]
     public static void Crawl()
     {
@@ -23,7 +40,7 @@ public static class DumpShopData
 
     private static void CrawlSingle(FlatBufferTableObject array, ReadOnlySpan<byte> data, string path)
     {
-        var sb = new StringBuilder();
+        using var writer = new StreamWriter(path, false, Encoding.UTF8);
         var count = array.Length;
         for (int i = 0; i < count; i++)
         {
@@ -33,9 +50,8 @@ public static class DumpShopData
             var items = io.ReadArrayAs<int>(data, 0);
             int[] arr = items.ToArray();
 
-            sb.AppendFormat("{0:X16}", f0.Value).Append(',').AppendJoin(",", arr).AppendLine();
+            writer.WriteLine($"{f0.Value:X16},{string.Join(',', arr)}");
         }
-        File.WriteAllText(path, sb.ToString());
     }
 
     private static void CrawlMulti(FlatBufferTableObject array, ReadOnlySpan<byte> data, string path)
@@ -43,7 +59,7 @@ public static class DumpShopData
         var count = array.Length;
         for (int i = 0; i < count; i++)
         {
-            var sb = new StringBuilder();
+            using var writer = new StreamWriter($"{path}-{i}.txt", false, Encoding.UTF8);
             var node = array.GetEntry(i);
             var f0 = node.ReadAs<ulong>(data, 0);
             var tables = node.ReadAsTable(data, 1);
@@ -54,10 +70,8 @@ public static class DumpShopData
                 var items = sub.ReadArrayAs<int>(data, 0);
                 int[] arr = items.ToArray();
 
-                sb.AppendFormat("{0:X16}", f0.Value).Append(',').AppendJoin(",", arr).AppendLine();
+                writer.WriteLine($"{f0.Value:X16},{string.Join(',', arr)}");
             }
-
-            File.WriteAllText($"{path}-{i}.txt", sb.ToString());
         }
     }
 }
