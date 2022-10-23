@@ -462,7 +462,7 @@ public sealed class ConsoleCrawler
             var analysis = result.AnalyzeNodesWithType(type, data);
             int hash = 0;
             var settings = new SchemaAnalysisSettings();
-            FileAnalysis.RecursiveDump(result.Groups[type][0].Node, data, analysis.Fields, Console.Out, ref hash, settings);
+            FileAnalysis.RecursiveDump(result.Groups[type].NodeWithMostFields, data, analysis.Fields, Console.Out, ref hash, settings);
         }
     }
 }
