@@ -40,9 +40,10 @@ public static class SwordShieldPRMB
     private static object GetUnionTypeValue(byte type, FlatBufferNodeField obj, ReadOnlySpan<byte> data) => type switch
     {
         1 => obj.ReadAs<byte>(data, 0).Value,
+        2 => obj.ReadAs<float>(data, 0).Value,
         3 => obj.ReadAsString(data, 0).Value,
         4 => obj.ReadAs<ulong>(data, 0).Value.ToString("X16"),
-        _ => throw new ArgumentOutOfRangeException(nameof(type)),
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
     };
 
     private static void DumpPRMB_0(FlatBufferTableObject node, ReadOnlySpan<byte> data, StreamWriter writer)
