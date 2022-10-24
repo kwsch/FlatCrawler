@@ -91,12 +91,6 @@ public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
         ObjectClass.Observers.Remove(this);
     }
 
-    public void DisassociateRelationships()
-    {
-        UnRegisterMemory();
-        UnRegisterObjectClass();
-    }
-
     public void OnMemberCountChanged(int count)
     {
         if (Fields.Length == count)

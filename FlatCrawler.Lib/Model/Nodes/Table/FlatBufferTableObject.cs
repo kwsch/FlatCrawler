@@ -119,7 +119,7 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
                 };
                 unionTypeClasses.Add(type, fieldInfo = newUnionInfo);
             }
-            child.TrackType(fieldInfo);
+            child.TrackFieldInfo(fieldInfo);
             child.Name = name;
 
             entry.Name = name;
