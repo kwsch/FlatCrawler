@@ -220,6 +220,88 @@ public sealed class ConsoleCrawler
                 Console.WriteLine("Node has no fields. Unable to read the requested field node.");
                 return CrawlResult.Silent;
             }
+            case "ftowf" when node is IArrayNode p:
+            {
+                // Find table object with field
+                var (tableIndex, other) = CommandUtil.GetDualArgs(args);
+                var fieldIndex = int.Parse(other);
+                for (int i = 0; i < p.Entries.Count; i++)
+                {
+                    var arrayEntry = (IFieldNode)p.GetEntry(i);
+                    var table = (FlatBufferTableObject?)arrayEntry.GetField(tableIndex);
+                    if(table == null)
+                        continue; // Field might be undefined (Default)
+
+                    var entryCount = table.Entries.Length;
+
+                    if (entryCount == 0)
+                        continue;
+
+                    for (int j = 0; j < entryCount; j++)
+                    {
+                        var obj = table.GetEntry(j);
+                        var fc = obj.HasField(fieldIndex);
+
+                        if (!fc)
+                            continue;
+
+                        Console.WriteLine(
+                            $"Entry[{i}].Field_{tableIndex:00}[{j}] has a value for field {fieldIndex}");
+                        return CrawlResult.Silent;
+                    }
+                }
+
+                Console.WriteLine($"No entry has a table on Field {tableIndex} with a object that has a value for field {fieldIndex}");
+                return CrawlResult.Silent;
+            }
+            case "ftwe" when node is IArrayNode p:
+            {
+                // Find table with entry
+                var fieldIndex = int.Parse(args);
+                for (int i = 0; i < p.Entries.Count; i++)
+                {
+                    var arrayEntry = (IFieldNode)p.GetEntry(i);
+                    var table = (FlatBufferTableObject?)arrayEntry.GetField(fieldIndex);
+                    if(table == null)
+                        continue; // Field might be undefined (Default)
+
+                    var entryCount = table.Entries.Length;
+
+                    if (entryCount == 0)
+                        continue;
+
+                    Console.WriteLine($"Entry {i} has a table on Field {fieldIndex} with {table.Entries.Length} entries");
+                    return CrawlResult.Silent;
+                }
+
+                Console.WriteLine($"No entry has a table on Field {fieldIndex} with entries");
+                return CrawlResult.Silent;
+            }
+            case "ftwes" when node is IArrayNode p:
+            {
+                // Find table with entries
+                var fieldIndex = int.Parse(args);
+                var entries = new List<int>();
+                for (int i = 0; i < p.Entries.Count; i++)
+                {
+                    var arrayEntry = (IFieldNode)p.GetEntry(i);
+                    var table = (FlatBufferTableObject?)arrayEntry.GetField(fieldIndex);
+                    if(table == null)
+                        continue; // Field might be undefined (Default)
+
+                    var entryCount = table.Entries.Length;
+
+                    if (entryCount == 0)
+                        continue;
+
+                    entries.Add(i);
+                }
+
+                Console.WriteLine(entries.Count != 0
+                    ? $"Entries with table entries for Field {fieldIndex}: {string.Join(" ", entries)}"
+                    : $"No entry has a table on Field {fieldIndex} with entries");
+                return CrawlResult.Silent;
+            }
             case "fewf" when node is IArrayNode p:
             {
                 var fIndex = int.Parse(args);
