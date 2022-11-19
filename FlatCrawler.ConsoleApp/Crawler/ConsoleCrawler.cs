@@ -24,11 +24,10 @@ public sealed class ConsoleCrawler
 
     public void CrawlLoop()
     {
-        var fn = Path.GetFileName(FilePath);
+        var fileName = Path.GetFileName(FilePath);
+        SaveStatePath = Path.ChangeExtension(fileName, ".txt");
 
-        SaveStatePath = Path.ChangeExtension(fn, ".txt");
-
-        Console.WriteLine($"Crawling {Console.Title = fn}...");
+        Console.WriteLine($"Crawling {Console.Title = fileName}...");
         Console.WriteLine();
 
         FlatBufferNode node = FlatBufferRoot.Read(FbFile, 0);
@@ -375,6 +374,11 @@ public sealed class ConsoleCrawler
                     return CrawlResult.Silent;
                 case "hex" or "h":
                     DumpHex(data, node.Offset);
+                    return CrawlResult.Silent;
+                case "g" or "generate":
+                    var root = node;
+                    while (root.Parent != null) { root = root.Parent; }
+                    ClassGenerator.GeneratePkNXClass(((FlatBufferRoot)root), FilePath);
                     return CrawlResult.Silent;
 
                 // reloading state from previous session
