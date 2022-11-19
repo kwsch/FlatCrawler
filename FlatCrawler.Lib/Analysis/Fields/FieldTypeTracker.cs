@@ -212,7 +212,7 @@ public sealed record FieldTypeTracker
         var sb = new StringBuilder();
         if (Single != 0)
         {
-            sb.Append("Type: ");
+            sb.Append("Possible Types: ");
             foreach (var (type, _) in Structs)
                 AppendIfSet(Single, type, sb, false);
             AppendIfSet(Single, TypeCode.Boolean, sb, false);
@@ -223,7 +223,7 @@ public sealed record FieldTypeTracker
         {
             if (Single != 0)
                 sb.Append("    ");
-            sb.Append("ArrayType: ");
+            sb.Append("Possible ArrayTypes: ");
             foreach (var (type, _) in Structs)
                 AppendIfSet(Array, type, sb, true);
             AppendIfSet(Array, TypeCode.Object, sb, true);
@@ -237,7 +237,7 @@ public sealed record FieldTypeTracker
     {
         if ((flags & (1u << (int)type)) == 0)
             return;
-        sb.Append(type).Append(array ? "[]" : "").Append(' ');
+        sb.Append(type.ToTypeString()).Append(array ? "[]" : "").Append("; ");
     }
 
     public string Summary(FlatBufferNodeField node, int index, ReadOnlySpan<byte> data)
@@ -249,7 +249,7 @@ public sealed record FieldTypeTracker
         var sb = new StringBuilder();
         if (Single != 0)
         {
-            sb.Append("Type: ");
+            sb.Append("Possible Types: ");
             foreach (var (type, _) in Structs)
                 AppendIfSet(Single, type, node, index, data, sb, false);
             AppendIfSet(Single, TypeCode.Boolean, node, index, data, sb, false);
@@ -260,7 +260,7 @@ public sealed record FieldTypeTracker
         {
             if (Single != 0)
                 sb.Append("    ");
-            sb.Append("ArrayType: ");
+            sb.Append("Possible ArrayTypes: ");
             foreach (var (type, _) in Structs)
                 AppendIfSet(Array, type, node, index, data, sb, true);
             AppendIfSet(Array, TypeCode.Object, node, index, data, sb, true);
@@ -277,7 +277,7 @@ public sealed record FieldTypeTracker
         try
         {
             var display = GetDisplayValue(node, index, data, type, array);
-            sb.Append(display).Append(' ');
+            sb.Append(display).Append("; ");
         }
         catch
         {
@@ -290,7 +290,7 @@ public sealed record FieldTypeTracker
         if (!array)
         {
             if (!node.HasField(index))
-                return $"{type} (Default)";
+                return $"{type.ToTypeString()} (Default)";
             if (type is TypeCode.Object)
                 return node.ReadAsObject(data, index).TypeName;
             return node.ReadAs(data, index, type).TypeName;
@@ -298,13 +298,13 @@ public sealed record FieldTypeTracker
         // array
         {
             if (!node.HasField(index))
-                return $"{type}[] (null)";
+                return $"{type.ToTypeString()}[] (null)";
             if (type is TypeCode.Object && node.ReadAsTable(data, index) is { } obj)
                 return $"{obj.TypeName}";
             if (type is TypeCode.String && node.ReadAsStringTable(data, index) is { } str)
                 return $"string[{str.Entries.Length}]";
             if (node.ReadArrayAs(data, index, type) is IArrayNode a)
-                return $"{type}[{a.Entries.Count}]";
+                return $"{type.ToTypeString()}[{a.Entries.Count}]";
         }
         throw new ArgumentException("Unrecognized type.", nameof(type));
     }

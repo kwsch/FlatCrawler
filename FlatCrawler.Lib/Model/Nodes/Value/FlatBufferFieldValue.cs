@@ -19,7 +19,7 @@ public sealed record FlatBufferFieldValue<T> : FlatBufferNode, IStructNode where
     {
         get => Value switch
         {
-            bool b => $"{Type} {b}",
+            bool b => $"{Type.ToTypeString()} {b}",
             IFormattable f => GetFormattedValue(f, Type),
             _ => base.TypeName,
         };
@@ -28,12 +28,12 @@ public sealed record FlatBufferFieldValue<T> : FlatBufferNode, IStructNode where
 
     private static string GetFormattedValue(IFormattable f, TypeCode type) => type switch
     {
-        TypeCode.Single or TypeCode.Double => $"{type} {f:R}",
-        TypeCode.Byte   or TypeCode.SByte  => $"{type} {f:X2} ({f})",
-        TypeCode.UInt16 or TypeCode.Int16  => $"{type} {f:X4} ({f})",
-        TypeCode.UInt32 or TypeCode.Int32  => $"{type} {f:X8} ({f})",
-        TypeCode.UInt64 or TypeCode.UInt64 => $"{type} {f:X16} ({f})",
-        _ => $"{type} {f:X} ({f})",
+        TypeCode.Single or TypeCode.Double => $"{type.ToTypeString()} {f:R}",
+        TypeCode.Byte   or TypeCode.SByte  => $"{type.ToTypeString()} {f:X2} ({f})",
+        TypeCode.UInt16 or TypeCode.Int16  => $"{type.ToTypeString()} {f:X4} ({f})",
+        TypeCode.UInt32 or TypeCode.Int32  => $"{type.ToTypeString()} {f:X8} ({f})",
+        TypeCode.UInt64 or TypeCode.UInt64 => $"{type.ToTypeString()} {f:X16} ({f})",
+        _ => $"{type.ToTypeString()} {f:X} ({f})",
     };
 
     private FlatBufferFieldValue(T value, TypeCode type, FlatBufferNode parent, int offset) : base(offset, parent)

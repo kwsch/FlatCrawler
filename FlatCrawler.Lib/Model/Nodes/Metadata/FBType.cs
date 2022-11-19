@@ -15,7 +15,7 @@ public record FBType
     public FBType(TypeCode type = TypeCode.Empty)
     {
         Type = type;
-        TypeName = type.ToString().ToLowerInvariant();
+        TypeName = type.ToTypeString();
     }
 
     // Default structs are zeroed. Any non-zero value is a valid node type definition.
