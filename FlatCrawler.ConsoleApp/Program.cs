@@ -1,5 +1,7 @@
 using System;
+using System.Globalization;
 using System.IO;
+using System.Threading;
 using FlatCrawler.Lib;
 
 namespace FlatCrawler.ConsoleApp;
@@ -8,6 +10,10 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
+        // Fix number values displaying incorrectly for certain cultures.
+        Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+        Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+
         if (args.Length != 0)
             Crawl(args[0]);
         StartCrawl();
