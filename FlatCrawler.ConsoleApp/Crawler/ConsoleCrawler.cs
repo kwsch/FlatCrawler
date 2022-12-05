@@ -228,7 +228,7 @@ public sealed class ConsoleCrawler
                 {
                     var arrayEntry = (IFieldNode)p.GetEntry(i);
                     var table = (FlatBufferTableObject?)arrayEntry.GetField(tableIndex);
-                    if(table == null)
+                    if (table == null)
                         continue; // Field might be undefined (Default)
 
                     var entryCount = table.Entries.Length;
@@ -250,7 +250,7 @@ public sealed class ConsoleCrawler
                     }
                 }
 
-                Console.WriteLine($"No entry has a table on Field {tableIndex} with a object that has a value for field {fieldIndex}");
+                Console.WriteLine($"No entry has a table on Field {tableIndex} with an object that has a value for field {fieldIndex}");
                 return CrawlResult.Silent;
             }
             case "ftwe" when node is IArrayNode p:
@@ -261,7 +261,7 @@ public sealed class ConsoleCrawler
                 {
                     var arrayEntry = (IFieldNode)p.GetEntry(i);
                     var table = (FlatBufferTableObject?)arrayEntry.GetField(fieldIndex);
-                    if(table == null)
+                    if (table == null)
                         continue; // Field might be undefined (Default)
 
                     var entryCount = table.Entries.Length;
@@ -285,7 +285,7 @@ public sealed class ConsoleCrawler
                 {
                     var arrayEntry = (IFieldNode)p.GetEntry(i);
                     var table = (FlatBufferTableObject?)arrayEntry.GetField(fieldIndex);
-                    if(table == null)
+                    if (table == null)
                         continue; // Field might be undefined (Default)
 
                     var entryCount = table.Entries.Length;
@@ -367,7 +367,7 @@ public sealed class ConsoleCrawler
                 case "path":
                     Console.WriteLine(FilePath);
                     return CrawlResult.Silent;
-                case "quit":
+                case "quit" or "exit":
                     return CrawlResult.Quit;
                 case "p" or "info" or "print":
                     node.Print();
