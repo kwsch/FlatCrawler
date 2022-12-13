@@ -13,10 +13,10 @@ public sealed record FlatBufferTableStruct<T> : FlatBufferTable<FlatBufferFieldV
     public const int HeaderSize = sizeof(int);
     public readonly int EntrySize = Marshal.SizeOf<T>();
 
-    private DataRange NodePtrMemory => new(FieldOffset..(FieldOffset + Size), DataCategory.Pointer, $"{TypeName} Ptr ({Name} @ 0x{Offset:X})", true);
-    private DataRange TableMemory => new(Offset..(DataTableOffset + Length * EntrySize), DataCategory.Value, $"{TypeName} Data");
-    private DataRange ArrayLengthMemory => new(Offset..(Offset + HeaderSize), DataCategory.Misc, $"Array Length ({Length})", true);
-    private DataRange ObjectArrayMemory => new(DataTableOffset..(DataTableOffset + Length * EntrySize), DataCategory.Pointer, $"{TypeName} Ptrs", true);
+    private DataRange NodePtrMemory => new(FieldOffset..(FieldOffset + Size), DataCategory.Pointer, () => $"{TypeName} Ptr ({Name} @ 0x{Offset:X})", true);
+    private DataRange TableMemory => new(Offset..(DataTableOffset + Length * EntrySize), DataCategory.Value, () => $"{TypeName} Data");
+    private DataRange ArrayLengthMemory => new(Offset..(Offset + HeaderSize), DataCategory.Misc, () => $"Array Length ({Length})", true);
+    private DataRange ObjectArrayMemory => new(DataTableOffset..(DataTableOffset + Length * EntrySize), DataCategory.Pointer, () => $"{TypeName} Ptrs", true);
 
     public override string TypeName { get => $"{ArrayType}[]"; set { } }
 

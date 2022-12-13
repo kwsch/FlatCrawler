@@ -38,7 +38,7 @@ public sealed class VTable
 
     public int RefCount { get; set; } = 0;
 
-    public DataRange VTableMemory => new(Location..(Location + VTableLength), DataCategory.VTable, "VTable");
+    public DataRange VTableMemory => new(Location..(Location + VTableLength), DataCategory.VTable, () => "VTable");
 
     public VTable(FlatBufferFile file, int offset)
     {

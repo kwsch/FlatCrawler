@@ -122,7 +122,8 @@ public sealed class FlatBufferFile
         if (alignedAddress == vTable.Location)
             return;
 
-        var alignmentPadding = new DataRange(alignedAddress..vTable.Location, DataCategory.Padding, "Alignment Padding");
+        var alignmentPadding = new DataRange(alignedAddress..vTable.Location, DataCategory.Padding, () => "Alignment Padding");
+
         SetProtectedMemory(alignmentPadding);
     }
 
@@ -142,7 +143,7 @@ public sealed class FlatBufferFile
         if (alignedAddress == vTable.Location)
             return;
 
-        var alignmentPadding = new DataRange(alignedAddress..vTable.Location, DataCategory.Padding, "Alignment Padding");
+        var alignmentPadding = new DataRange(alignedAddress..vTable.Location, DataCategory.Padding, () => "Alignment Padding");
         RemoveProtectedMemory(alignmentPadding);
     }
 

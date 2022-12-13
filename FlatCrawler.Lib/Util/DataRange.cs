@@ -13,7 +13,7 @@ public enum DataCategory
     Misc,
 }
 
-public readonly record struct DataRange(Range Range, DataCategory Category, string Description = "", bool IsSubRange = false) : IComparable<DataRange>
+public readonly record struct DataRange(Range Range, DataCategory Category, Func<string>? DescriptionProviderCallback = null, bool IsSubRange = false) : IComparable<DataRange>
 {
     public int Start => Range.Start.Value;
     public int End => Range.End.Value;
@@ -41,4 +41,6 @@ public readonly record struct DataRange(Range Range, DataCategory Category, stri
 
     public bool IsOverlapping(DataRange other) => other.End > Start && other.Start < End;
     public bool Contains(DataRange other) => Start >= other.Start && End <= other.End;
+
+    public string Description => DescriptionProviderCallback?.Invoke() ?? string.Empty;
 }

@@ -11,14 +11,14 @@ public sealed record FlatBufferStringValue : FlatBufferNode
 {
     public const int HeaderSize = sizeof(int);
     public const int NullTerminatorSize = sizeof(byte);
-    private DataRange NodePtrMemory => new(Offset..(Offset + Size), DataCategory.Pointer, $"String Ptr ({Name} @ 0x{StringOffset:X})", true);
-    private DataRange StringMemory => new(StringOffset..(StringOffset + StringLength), DataCategory.Value, $"{Name} String Value");
-    private DataRange StringLengthMemory => new(StringLengthOffset..(StringLengthOffset + HeaderSize), DataCategory.Misc, $"{Name} String Length ({StringLength})");
+    private DataRange NodePtrMemory => new(Offset..(Offset + Size), DataCategory.Pointer, () => $"String Ptr ({Name} @ 0x{StringOffset:X})", true);
+    private DataRange StringMemory => new(StringOffset..(StringOffset + StringLength), DataCategory.Value, () => $"{Name} String Value");
+    private DataRange StringLengthMemory => new(StringLengthOffset..(StringLengthOffset + HeaderSize), DataCategory.Misc, () => $"{Name} String Length ({StringLength})");
     private int AlignedPadding => (int)MemoryUtil.AlignToBytes((uint)StringMemory.End + NullTerminatorSize, 2);
 
     // > Strings end within the buffer and has a zero byte after the end which is also within the buffer.
     // See (https://github.com/dvidelabs/flatcc/blob/master/doc/binary-format.md#verification)
-    private DataRange NullTerminatorMemory => new(StringMemory.End..AlignedPadding, DataCategory.Padding, $"{Name} Null Terminator + Pad");
+    private DataRange NullTerminatorMemory => new(StringMemory.End..AlignedPadding, DataCategory.Padding, () => $"{Name} Null Terminator + Pad");
 
 
     public override string TypeName { get => $"string ({Value})"; set { } }

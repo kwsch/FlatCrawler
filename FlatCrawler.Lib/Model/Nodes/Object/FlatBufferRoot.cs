@@ -19,7 +19,7 @@ public sealed record FlatBufferRoot : FlatBufferObject
     public string? Magic { get; }
 
     public override string TypeName { get => "Root"; set { } }
-    private DataRange NodeMemory => new(..Size, DataCategory.Misc, TypeName);
+    private DataRange NodeMemory => new(..Size, DataCategory.Misc, () => TypeName);
     private int MagicLength => Magic is null ? 0 : MaxMagicLength;
 
     private FlatBufferRoot(FlatBufferFile file, VTable vTable, string? magic, int dataTableOffset) :

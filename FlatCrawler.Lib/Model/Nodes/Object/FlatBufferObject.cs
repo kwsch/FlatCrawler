@@ -10,9 +10,9 @@ namespace FlatCrawler.Lib;
 public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
 {
     public const int HeaderSize = sizeof(int);
-    private DataRange NodePtrMemory => new(Offset..(Offset + Size), DataCategory.Pointer, $"{TypeName} Ptr ({Name} @ 0x{DataTableOffset:X})", true);
-    private DataRange DataTableMemory => new(DataTableOffset..(DataTableOffset + VTable.DataTableLength), DataCategory.DataTable, $"{FullNodeName} Data Table");
-    private DataRange VTablePtrMemory => new(DataTableOffset..(DataTableOffset + HeaderSize), DataCategory.Pointer, $"VTable Ptr (@ 0x{VTableOffset:X})", true);
+    private DataRange NodePtrMemory => new(Offset..(Offset + Size), DataCategory.Pointer, () => $"{TypeName} Ptr ({Name} @ 0x{DataTableOffset:X})", true);
+    private DataRange DataTableMemory => new(DataTableOffset..(DataTableOffset + VTable.DataTableLength), DataCategory.DataTable, () => $"{FullNodeName} Data Table");
+    private DataRange VTablePtrMemory => new(DataTableOffset..(DataTableOffset + HeaderSize), DataCategory.Pointer, () => $"VTable Ptr (@ 0x{VTableOffset:X})", true);
 
     public FBClass ObjectClass => (FBClass)FieldInfo.Type;
 

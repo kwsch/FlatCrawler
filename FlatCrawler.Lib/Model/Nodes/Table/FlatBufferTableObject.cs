@@ -13,10 +13,10 @@ public sealed record FlatBufferTableObject : FlatBufferTable<FlatBufferObject>
     public const int HeaderSize = 4;
     public const int EntrySize = 4;
 
-    private DataRange NodePtrMemory => new(FieldOffset..(FieldOffset + Size), DataCategory.Pointer, $"{TypeName} Ptr ({Name} @ 0x{Offset:X})", true);
-    private DataRange TableMemory => new(Offset..(DataTableOffset + Length * EntrySize), DataCategory.Value, $"{TypeName} Data");
-    private DataRange ArrayLengthMemory => new(Offset..(Offset + HeaderSize), DataCategory.Misc, $"Array Length ({Length})", true);
-    private DataRange ObjectArrayMemory => new(DataTableOffset..(DataTableOffset + Length * EntrySize), DataCategory.Pointer, $"{TypeName} Ptrs", true);
+    private DataRange NodePtrMemory => new(FieldOffset..(FieldOffset + Size), DataCategory.Pointer, () => $"{TypeName} Ptr ({Name} @ 0x{Offset:X})", true);
+    private DataRange TableMemory => new(Offset..(DataTableOffset + Length * EntrySize), DataCategory.Value, () => $"{TypeName} Data");
+    private DataRange ArrayLengthMemory => new(Offset..(Offset + HeaderSize), DataCategory.Misc, () => $"Array Length ({Length})", true);
+    private DataRange ObjectArrayMemory => new(DataTableOffset..(DataTableOffset + Length * EntrySize), DataCategory.Pointer, () => $"{TypeName} Ptrs", true);
 
     /// <summary>
     /// Absolute offset that has the raw table pointer bytes.
