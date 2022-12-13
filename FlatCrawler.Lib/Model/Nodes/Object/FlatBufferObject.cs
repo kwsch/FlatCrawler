@@ -10,9 +10,9 @@ namespace FlatCrawler.Lib;
 public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
 {
     public const int HeaderSize = sizeof(int);
-    private DataRange NodePtrMemory => new(Offset..(Offset + Size), $"{TypeName} Ptr (@ 0x{DataTableOffset:X})", true);
-    private DataRange DataTableMemory => new(DataTableOffset..(DataTableOffset + VTable.DataTableLength), "Data Table");
-    private DataRange VTablePtrMemory => new(DataTableOffset..(DataTableOffset + HeaderSize), $"VTable Ptr (@ 0x{VTableOffset:X})", true);
+    private DataRange NodePtrMemory => new(Offset..(Offset + Size), DataCategory.Pointer, $"{TypeName} Ptr ({Name} @ 0x{DataTableOffset:X})", true);
+    private DataRange DataTableMemory => new(DataTableOffset..(DataTableOffset + VTable.DataTableLength), DataCategory.DataTable, $"{FullNodeName} Data Table");
+    private DataRange VTablePtrMemory => new(DataTableOffset..(DataTableOffset + HeaderSize), DataCategory.Pointer, $"VTable Ptr (@ 0x{VTableOffset:X})", true);
 
     public FBClass ObjectClass => (FBClass)FieldInfo.Type;
 
@@ -42,7 +42,7 @@ public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
 
     public override void RegisterMemory()
     {
-        //FbFile.SetProtectedMemory(NodePtrMemory);
+        FbFile.SetProtectedMemory(NodePtrMemory);
         FbFile.SetProtectedMemory(DataTableMemory);
         FbFile.SetProtectedMemory(VTablePtrMemory);
         ObjectClass.RegisterMemory();
@@ -50,7 +50,7 @@ public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
 
     public override void UnRegisterMemory()
     {
-        //FbFile.RemoveProtectedMemory(NodePtrMemory);
+        FbFile.RemoveProtectedMemory(NodePtrMemory);
         FbFile.RemoveProtectedMemory(DataTableMemory);
         FbFile.RemoveProtectedMemory(VTablePtrMemory);
         if (FieldInfo.Type is FBClass c)

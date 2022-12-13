@@ -4,7 +4,12 @@ public static class MemoryUtil
 {
     public static uint AlignToBytes(uint address, uint alignment)
     {
-        return (address + (alignment - 1)) & (~(alignment - 1));
+        return (address + (alignment - 1)) & ~(alignment - 1);
+    }
+
+    public static uint BackwardAlignToBytes(uint address, uint alignment)
+    {
+        return address & ~(alignment - 1);
     }
 
     public static uint AlignForwardAdjustment(uint address, uint alignment)

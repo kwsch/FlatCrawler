@@ -421,8 +421,17 @@ public sealed class ConsoleCrawler
                     return CrawlResult.Silent;
 
                 case "v":
-                    PrintProtectedRanges();
+                {
+                    var hiddenCategories = new[] // TODO: Supply as parameters
+                    {
+                        DataCategory.Pointer,
+                        DataCategory.Padding,
+                        DataCategory.Misc,
+                    };
+
+                    PrintProtectedRanges(hiddenCategories);
                     return CrawlResult.Silent;
+                }
                 #endregion
 
                 case "up":
@@ -456,24 +465,22 @@ public sealed class ConsoleCrawler
         }
     }
 
-    private void PrintProtectedRanges()
+    private void PrintProtectedRanges(params DataCategory[] hiddenCategories)
     {
         static bool IsAlignmentPadding(DataRange missingRange, int lastRangeEnd)
         {
             // If it's 2 bytes, it's probably padding. Check alignment to 4 bytes.
-            // TODO: Should probably also validate that the range is actually for a data table.
-            // TODO: It seems VTables get right-aligned (left padded) to the nearest 4 byte boundry
-
+            // TODO: Should probably add auto alignment padding for data tables just like was done for VTables.
+            // This function should be removed once all padding has been provided in the right places
             if (missingRange.Length == 2 && !MemoryUtil.IsAligned((uint)lastRangeEnd, 4))
             {
-                Console.WriteLine($"Found '{"Alignment Padding",-26}' at Range: {missingRange}");
+                Console.WriteLine($"{missingRange} \"Alignment Padding\"");
                 return true;
             }
 
             return false;
         }
 
-        bool DisplaySubRanges = true; // TODO: GLOBAL SETTING?
         int totalBytes = FbFile.Data.Length;
         int dataSize = FbFile.Data.Length;
 
@@ -481,14 +488,11 @@ public sealed class ConsoleCrawler
         int lastRangeEnd = 0;
         foreach (var range in FbFile.ProtectedDataRanges)
         {
-            if (range.IsSubRange && !DisplaySubRanges)
-                continue;
-
             if (!range.IsSubRange)
             {
                 if (lastRangeEnd != range.Start)
                 {
-                    var missingRange = new DataRange(lastRangeEnd..range.Start);
+                    var missingRange = new DataRange(lastRangeEnd..range.Start, DataCategory.None);
 
                     if (IsAlignmentPadding(missingRange, lastRangeEnd))
                         dataSize -= missingRange.Length;
@@ -500,13 +504,16 @@ public sealed class ConsoleCrawler
                 lastRangeEnd = range.End;
             }
 
-            var str = $"Found '{range.Description,-26}' at Range: {range}";
+            if (hiddenCategories.Contains(range.Category))
+                continue;
+
+            var str = $"{range} \"{range.Description}\"";
             Console.WriteLine(FlatBufferPrinter.GetDepthPadded(str, range.IsSubRange ? 1 : 0));
         }
 
         if (lastRangeEnd != totalBytes)
         {
-            var missingRange = new DataRange(lastRangeEnd..totalBytes);
+            var missingRange = new DataRange(lastRangeEnd..totalBytes, DataCategory.None);
             if (IsAlignmentPadding(missingRange, lastRangeEnd))
                 dataSize -= missingRange.Length;
             else

@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace FlatCrawler.Lib;
 
@@ -27,6 +29,31 @@ public sealed class FlatBufferFile
     public void SetProtectedMemory(DataRange range)
     {
         EnsureNoAccessViolation(range);
+
+        DataRange[] overlappingPadding = ProtectedDataRanges.Where(r => r.Category == DataCategory.Padding && r.IsOverlapping(range)).ToArray();
+
+        foreach (var padding in overlappingPadding)
+        {
+            // If the new range contains the padding in full, we need to remove it
+            // Otherwise the padding will need to be adjusted to the new range.
+            ProtectedDataRanges.Remove(padding);
+
+            if (range.Contains(padding))
+                continue;
+
+
+            if (padding.Start < range.End)
+            {
+                // The padding is attached to the end if the range
+                ProtectedDataRanges.Add(padding with { Range = range.End..padding.End });
+            }
+            else
+            {
+                // The padding is attached to the start if the range
+                ProtectedDataRanges.Add(padding with { Range = padding.Start..range.Start });
+            }
+        }
+
         ProtectedDataRanges.Add(range);
     }
 
@@ -51,18 +78,21 @@ public sealed class FlatBufferFile
 
     private DataRange FindFirstOverlapping(DataRange input)
     {
-        if (input.IsSubRange) // Ignore sub ranges
+        if (ShouldIgnoreOverlap(input))
             return default;
 
-        foreach (var protect in ProtectedDataRanges)
+        foreach (var exist in ProtectedDataRanges)
         {
-            if (IsOverlapping(input, protect))
-                return protect;
+            if (!ShouldIgnoreOverlap(exist) && input.IsOverlapping(exist))
+                return exist;
         }
         return default;
     }
 
-    private static bool IsOverlapping(DataRange input, DataRange exist) => !exist.IsSubRange && exist.End > input.Start && exist.Start < input.End;
+    /// <summary>
+    /// Check if the range should be tested for potential overlap
+    /// </summary>
+    private static bool ShouldIgnoreOverlap(DataRange range) => range.IsSubRange || range.Category == DataCategory.Padding;
 
     /// <summary>
     /// Read the VTable at <paramref name="offset"/>.
@@ -81,11 +111,19 @@ public sealed class FlatBufferFile
     {
         vTable.RefCount++;
 
-        if (vTable.RefCount == 1)
-        {
-            VTables.Add(vTable.Location, vTable);
-            SetProtectedMemory(vTable.VTableMemory);
-        }
+        if (vTable.RefCount != 1)
+            return;
+
+        VTables.Add(vTable.Location, vTable);
+        SetProtectedMemory(vTable.VTableMemory);
+
+        // Check for alignment padding
+        var alignedAddress = (int)MemoryUtil.BackwardAlignToBytes((uint)vTable.Location, 4);
+        if (alignedAddress == vTable.Location)
+            return;
+
+        var alignmentPadding = new DataRange(alignedAddress..vTable.Location, DataCategory.Padding, "Alignment Padding");
+        SetProtectedMemory(alignmentPadding);
     }
 
     public void UnRegisterVTable(VTable vTable)
@@ -93,11 +131,19 @@ public sealed class FlatBufferFile
         vTable.RefCount--;
         Debug.Assert(vTable.RefCount >= 0, "VTable ref count is below zero!");
 
-        if (vTable.RefCount == 0)
-        {
-            VTables.Remove(vTable.Location);
-            RemoveProtectedMemory(vTable.VTableMemory);
-        }
+        if (vTable.RefCount != 0)
+            return;
+
+        VTables.Remove(vTable.Location);
+        RemoveProtectedMemory(vTable.VTableMemory);
+
+        // Remove alignment padding if it was applied
+        var alignedAddress = (int)MemoryUtil.BackwardAlignToBytes((uint)vTable.Location, 4);
+        if (alignedAddress == vTable.Location)
+            return;
+
+        var alignmentPadding = new DataRange(alignedAddress..vTable.Location, DataCategory.Padding, "Alignment Padding");
+        RemoveProtectedMemory(alignmentPadding);
     }
 
     public static bool GetIsSizeValid(ReadOnlySpan<byte> data) => data.Length >= 8;
