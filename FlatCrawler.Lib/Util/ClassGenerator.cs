@@ -3,21 +3,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace FlatCrawler.Lib;
 
 public static class ClassGenerator
 {
     private const string Header =
-        $"using System;\n" +
-        $"using System.ComponentModel;\n" +
-        $"using FlatSharp.Attributes;\n" +
-        $"\n" +
-        $"namespace pkNX.Structures.FlatBuffers;\n\n";
+        "using System;\n" +
+        "using System.ComponentModel;\n" +
+        "using FlatSharp.Attributes;\n" +
+        "\n" +
+        "namespace pkNX.Structures.FlatBuffers;\n\n";
 
     private const string ClassAttributes = "[FlatBufferTable, TypeConverter(typeof(ExpandableObjectConverter))]";
-    private const string WriteFunc = $"    public byte[] Write() => FlatBufferConverter.SerializeFrom(this);";
+    private const string WriteFunc = "    public byte[] Write() => FlatBufferConverter.SerializeFrom(this);";
 
     private static bool IsUndefined(string name)
     {
@@ -54,7 +53,7 @@ public static class ClassGenerator
         }
         return new string(tmp[..ctr]);
     }
-    
+
     private static string GetMemberDef(int fieldId, FBFieldInfo field)
     {
         FBType type = field.Type;
@@ -69,7 +68,7 @@ public static class ClassGenerator
         result.AppendJoin(' ',
             $"[FlatBufferItem({fieldId:00})]",
             "public",
-            (field.IsArray ? $"{typeStr}[]" : typeStr),
+            field.IsArray ? $"{typeStr}[]" : typeStr,
             field.Name,
             "{ get; set; }");
 
@@ -87,7 +86,7 @@ public static class ClassGenerator
     {
         string classMembers = string.Empty;
         var members = fbClass.Members;
-        subClasses = new HashSet<FBClass>();
+        subClasses = [];
 
         for (int i = 0; i < members.Count; ++i)
         {
@@ -125,7 +124,7 @@ public static class ClassGenerator
         StringBuilder fileContents = new();
         fileContents.AppendJoin('\n', Header);
 
-        HashSet<FBClass> visitedSubClasses = new() { root.ObjectClass };
+        HashSet<FBClass> visitedSubClasses = [root.ObjectClass];
         Queue<FBClass> toProcess = new();
 
         {
@@ -133,9 +132,9 @@ public static class ClassGenerator
             string archiveClass = $"{ClassAttributes}\n" +
                                   $"public class {archiveTypeName}Archive : IFlatBufferArchive<{archiveTypeName}>\n{{\n" +
                                   $"{WriteFunc}\n" +
-                                  $"\n" +
+                                  "\n" +
                                   $"{archiveClassMembers}" +
-                                  $"}}\n";
+                                  "}}\n";
 
             fileContents.Append(archiveClass);
 
@@ -144,7 +143,7 @@ public static class ClassGenerator
             foreach (FBClass subClass in archiveSubClasses)
                 toProcess.Enqueue(subClass);
         }
-        
+
         while (toProcess.Count > 0)
         {
             FBClass subClass = toProcess.Dequeue();
@@ -153,9 +152,9 @@ public static class ClassGenerator
             string classMembers = GenerateClassMembers(subClass, out HashSet<FBClass> subClasses);
             string objectClass = $"\n{ClassAttributes}\n" +
                                  $"public class {subClass.TypeName}\n" +
-                                 $"{{\n" +
+                                 "{{\n" +
                                  $"{classMembers}" +
-                                 $"}}\n";
+                                 "}}\n";
 
             fileContents.Append(objectClass);
 

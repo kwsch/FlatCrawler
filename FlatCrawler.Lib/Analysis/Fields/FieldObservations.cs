@@ -5,15 +5,13 @@ namespace FlatCrawler.Lib;
 /// <summary>
 /// Tracks metadata about the shape of a field across many node fields.
 /// </summary>
-public sealed class FieldObservations
+public sealed class FieldObservations(FieldSizeTracker size)
 {
     /// <summary> The number of bytes that the field occupies. </summary>
-    public FieldSizeTracker Size { get; }
+    public FieldSizeTracker Size { get; } = size;
 
     /// <summary> Potential type(s) of the field. </summary>
     public FieldTypeTracker Type { get; } = new();
-
-    public FieldObservations(FieldSizeTracker size) => Size = size;
 
     /// <summary>
     /// Updates the <see cref="Type"/> observations with the specified node.

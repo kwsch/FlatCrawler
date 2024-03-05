@@ -21,14 +21,14 @@ public sealed record FieldTypeTracker
     /// <summary> Packed bits of <see cref="TypeCode"/> values (flags), indicating if the field can be interpreted as an array with that type. </summary>
     public uint Array { get; private set; }
 
-    /// <summary> Indicates that the field can potentially be interpreted as an <see cref="FlatBufferObject"/>. </summary>
+    /// <summary> Indicates that the field can potentially be interpreted as a <see cref="FlatBufferObject"/>. </summary>
     public bool IsPotentialObject => (Single & (1u << (int)TypeCode.Object)) != 0;
 
-    /// <summary> Indicates that the field can be potentially interpreted as an <see cref="FlatBufferTableObject"/> </summary>
+    /// <summary> Indicates that the field can be potentially interpreted as a <see cref="FlatBufferTableObject"/> </summary>
     public bool IsPotentialObjectArray => (Array & (1u << (int)TypeCode.Object)) != 0;
 
     /// <summary>
-    /// Indicates if the field's type can be one of any of the recognized types.
+    /// Indicates if the field's type can be any of the recognized types.
     /// </summary>
     public bool IsRecognized => Single != 0 || Array != 0;
 
@@ -195,14 +195,14 @@ public sealed record FieldTypeTracker
     }
 
     private static readonly (TypeCode Type, int Size)[] Structs =
-    {
+    [
         (TypeCode.Byte, 1),
         (TypeCode.UInt16, 2),
         (TypeCode.UInt32, 4),
         (TypeCode.Single, 4),
         (TypeCode.UInt64, 8),
         (TypeCode.Double, 8),
-    };
+    ];
 
     public string Summary()
     {

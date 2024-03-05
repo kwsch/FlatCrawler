@@ -41,7 +41,7 @@ public sealed class FlatBufferPrinter
 
     private List<string> BuildTree(LinkedListNode<FlatBufferNode> linkNode)
     {
-        List<string> result = new();
+        List<string> result = [];
         AppendNodeData(linkNode, result, 0);
         return result;
     }

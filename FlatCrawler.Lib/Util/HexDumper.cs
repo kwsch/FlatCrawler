@@ -8,20 +8,13 @@ namespace FlatCrawler.Lib;
 /// <summary>
 /// Modified from https://codereview.stackexchange.com/q/145506
 /// </summary>
-public ref struct HexDumper
+public ref struct HexDumper(ReadOnlySpan<byte> data, int absoluteOffset, HexDumperConfig config)
 {
-    private readonly ReadOnlySpan<byte> Data; // relative span
-    private readonly HexDumperConfig Config;
-    private readonly int AbsoluteOffset; // offset Data originates from
+    private readonly ReadOnlySpan<byte> Data = data; // relative span
+    private readonly HexDumperConfig Config = config;
+    private readonly int AbsoluteOffset = absoluteOffset; // offset Data originates from
 
     private int _index = 0; // bytes dumped so far
-
-    public HexDumper(ReadOnlySpan<byte> data, int absoluteOffset, HexDumperConfig config)
-    {
-        Data = data;
-        AbsoluteOffset = absoluteOffset;
-        Config = config;
-    }
 
     public static string Dump(ReadOnlySpan<byte> data, int absoluteOffset)
     {
@@ -40,7 +33,7 @@ public ref struct HexDumper
         WriteBody(sb);
     }
 
-    private void WriteHeader(StringBuilder sb)
+    private readonly void WriteHeader(StringBuilder sb)
     {
         const string ofs = "Offset(h)| ";
 
@@ -91,7 +84,7 @@ public ref struct HexDumper
             WriteAscii(sb);
     }
 
-    private void WriteOffset(StringBuilder sb)
+    private readonly void WriteOffset(StringBuilder sb)
     {
         sb.AppendFormat("{0:X8}", AbsoluteOffset + _index).Append(" | ");
     }
@@ -102,7 +95,7 @@ public ref struct HexDumper
         _index++;
     }
 
-    private void WriteAscii(StringBuilder sb)
+    private readonly void WriteAscii(StringBuilder sb)
     {
         var ctr = _index;
         int backtrack = ((ctr - 1) / Config.BytesPerLine) * Config.BytesPerLine;

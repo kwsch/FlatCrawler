@@ -116,8 +116,7 @@ public record FlatBufferObject : FlatBufferNodeField, ISchemaObserver
 
     public static FlatBufferObject Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data)
     {
-        int tableOffset = offset;
-        return Read(offset, parent, data, tableOffset);
+        return Read(offset, parent, data, offset);
     }
 
     public static FlatBufferObject Read(int offset, FlatBufferNode parent, ReadOnlySpan<byte> data, int tableOffset)

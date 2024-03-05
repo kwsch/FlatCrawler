@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace FlatCrawler.Lib;
 
 /// <summary>
-/// Node comprising of a serialized struct value.
+/// Node comprised of a serialized struct value.
 /// </summary>
 /// <typeparam name="T">integral numeric types and floating point types only.</typeparam>
 public sealed record FlatBufferFieldValue<T> : FlatBufferNode, IStructNode where T : struct

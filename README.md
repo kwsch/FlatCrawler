@@ -15,8 +15,8 @@ An example manual parse of a FlatBuffer used by Pokémon Sword/Shield is provide
 
 ## Building
 
-FlatCrawler is a [.NET 6.0](https://dotnet.microsoft.com/download/dotnet/6.0) application.
+FlatCrawler is a [.NET 8.0](https://dotnet.microsoft.com/download/dotnet/8.0) application.
 
-The executable can be built with any compiler that supports C# 10.
+The executable can be built with any compiler that supports C# 11.
 
 The `.sln` can be opened with IDEs such as [Visual Studio](https://visualstudio.microsoft.com/downloads/).

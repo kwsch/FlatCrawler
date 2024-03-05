@@ -72,6 +72,6 @@ public static class TypeCodeUtil
         TypeCode.UInt64 => "ulong",
         TypeCode.Single => "float",
         TypeCode.Boolean => "bool",
-        _ => type.ToString().ToLowerInvariant()
+        _ => type.ToString().ToLowerInvariant(),
     };
 }

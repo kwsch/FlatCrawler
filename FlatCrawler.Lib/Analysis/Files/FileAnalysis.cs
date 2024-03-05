@@ -41,7 +41,7 @@ public static class FileAnalysis
         var files = Directory.EnumerateFiles(settings.InputPath, settings.SearchPattern, SearchOption.AllDirectories);
 
         var buffer = new byte[settings.MaxPeekSize].AsMemory();
-        List<FileAnalysisResult> results = new();
+        List<FileAnalysisResult> results = [];
 
         foreach (var file in files)
         {
@@ -132,7 +132,6 @@ public static class FileAnalysis
         var data = buffer[..(int)length];
         var read = fs.Read(data.Span);
 
-        fs.Dispose();
         if (read != length)
             throw new Exception("Read less than expected.");
 

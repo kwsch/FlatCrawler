@@ -7,20 +7,10 @@ using FlatCrawler.Lib;
 
 namespace FlatCrawler.ConsoleApp;
 
-public sealed class ConsoleCrawler
+public sealed class ConsoleCrawler(string FilePath, FlatBufferFile FbFile)
 {
-    private readonly List<string> ProcessedCommands = new();
+    private readonly List<string> ProcessedCommands = [];
     private string SaveStatePath = "lines.txt";
-
-    private readonly string FilePath;
-
-    private readonly FlatBufferFile FbFile;
-
-    public ConsoleCrawler(string path, FlatBufferFile file)
-    {
-        FilePath = path;
-        FbFile = file;
-    }
 
     public void CrawlLoop()
     {
@@ -171,7 +161,7 @@ public sealed class ConsoleCrawler
                 {
                     var index = CommandUtil.GetIntPossibleHex(args);
                     node = p.GetField(index) ??
-                           throw new ArgumentNullException(nameof(FlatBufferNode), "node not explored yet.");
+                           throw new ArgumentNullException(nameof(FlatBufferNode), $"node {index} not explored yet.");
                     return CrawlResult.Navigate;
                 }
 
@@ -378,7 +368,7 @@ public sealed class ConsoleCrawler
                 case "g" or "generate":
                     var root = node;
                     while (root.Parent != null) { root = root.Parent; }
-                    ClassGenerator.GeneratePkNXClass(((FlatBufferRoot)root), FilePath);
+                    ClassGenerator.GeneratePkNXClass((FlatBufferRoot)root, FilePath);
                     return CrawlResult.Silent;
 
                 // reloading state from previous session

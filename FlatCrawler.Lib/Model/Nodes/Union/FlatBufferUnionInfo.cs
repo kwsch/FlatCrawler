@@ -3,12 +3,9 @@ using System.Collections.Generic;
 
 namespace FlatCrawler.Lib;
 
-public sealed class FlatBufferUnionInfo
+public sealed class FlatBufferUnionInfo(Dictionary<byte, FBType> UnionTypes)
 {
-    public Dictionary<byte, FBType> UnionTypes { get; }
-
-    public FlatBufferUnionInfo() : this(new()) { }
-    public FlatBufferUnionInfo(Dictionary<byte, FBType> info) => UnionTypes = info;
+    public FlatBufferUnionInfo() : this([]) { }
 
     public FlatBufferUnionNode ReadUnion(FlatBufferNodeField parent, ReadOnlySpan<byte> data)
     {

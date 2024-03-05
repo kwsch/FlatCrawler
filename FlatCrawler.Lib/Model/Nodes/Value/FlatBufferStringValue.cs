@@ -20,7 +20,6 @@ public sealed record FlatBufferStringValue : FlatBufferNode
     // See (https://github.com/dvidelabs/flatcc/blob/master/doc/binary-format.md#verification)
     private DataRange NullTerminatorMemory => new(StringMemory.End..AlignedPadding, DataCategory.Padding, () => $"{Name} Null Terminator + Pad");
 
-
     public override string TypeName { get => $"string ({Value})"; set { } }
 
     /// <summary>

@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -10,21 +9,19 @@ namespace FlatCrawler.Lib;
 /// <summary>
 /// Draft file object
 /// </summary>
-public sealed class FlatBufferFile
+public sealed class FlatBufferFile(ReadOnlyMemory<byte> _data)
 {
     // Data should never overlap with any of the data ranges in this set
-    public readonly SortedSet<DataRange> ProtectedDataRanges = new();
+    public readonly SortedSet<DataRange> ProtectedDataRanges = [];
 
-    private readonly SortedDictionary<int, VTable> VTables = new();
+    private readonly SortedDictionary<int, VTable> VTables = [];
 
-    private readonly ReadOnlyMemory<byte> _data;
     public ReadOnlySpan<byte> Data => _data.Span;
 
     public bool IsValid => GetIsSizeValid(Data);
 
     public FlatBufferFile(string path) : this(File.ReadAllBytes(path).AsMemory()) { }
     public FlatBufferFile(byte[] data) : this(data.AsMemory()) { }
-    public FlatBufferFile(ReadOnlyMemory<byte> data) => _data = data;
 
     public void SetProtectedMemory(DataRange range)
     {
@@ -40,7 +37,6 @@ public sealed class FlatBufferFile
 
             if (range.Contains(padding))
                 continue;
-
 
             if (padding.Start < range.End)
             {

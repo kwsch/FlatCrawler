@@ -6,13 +6,13 @@ namespace FlatCrawler.Lib;
 
 public sealed record FBClass(FlatBufferFile File) : FBType(TypeCode.Object)
 {
-    public readonly List<ISchemaObserver> Observers = new();
+    public readonly List<ISchemaObserver> Observers = [];
 
-    private FBFieldInfo[] _members = Array.Empty<FBFieldInfo>();
+    private FBFieldInfo[] _members = [];
 
     public IReadOnlyList<FBFieldInfo> Members => _members;
 
-    private readonly SortedDictionary<int, VTable> AssociatedVTables = new();
+    private readonly SortedDictionary<int, VTable> AssociatedVTables = [];
 
     public void SetMemberType(ISchemaObserver sender, int memberIndex, ReadOnlySpan<byte> data, TypeCode type, bool asArray = false)
     {
@@ -48,10 +48,9 @@ public sealed record FBClass(FlatBufferFile File) : FBType(TypeCode.Object)
     public ClassUpdateResult AssociateVTable(VTable vTable)
     {
         ClassUpdateResult result = 0;
-        if (AssociatedVTables.ContainsKey(vTable.Location))
+        if (!AssociatedVTables.TryAdd(vTable.Location, vTable))
             return ClassUpdateResult.None;
 
-        AssociatedVTables.Add(vTable.Location, vTable);
         // We can't map to VTable offsets here, as each VTable can point to different offsets.
         // The only guarantee we have is that they map to the correct field id
         // A table field id maps to a vtable field id using the formula

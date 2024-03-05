@@ -12,7 +12,7 @@ public sealed class FieldAnalysisResult
     /// <summary>
     /// Map of field index to metadata about the field.
     /// </summary>
-    public readonly Dictionary<int, FieldObservations> Fields = new();
+    public readonly Dictionary<int, FieldObservations> Fields = [];
 
     /// <summary>
     /// Indicates if any field can be interpreted as any type. If false, the schema is invalid (not an object).
