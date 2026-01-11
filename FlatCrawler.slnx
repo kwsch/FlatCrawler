@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="FlatCrawler.ConsoleApp/FlatCrawler.ConsoleApp.csproj" />
+  <Project Path="FlatCrawler.Lib/FlatCrawler.Lib.csproj" />
+  <Project Path="FlatCrawler.Tests/FlatCrawler.Tests.csproj" />
+</Solution>
