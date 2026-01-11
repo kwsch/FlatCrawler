@@ -77,8 +77,9 @@ public static class FileAnalysis
 
     public static void IterateAndDumpSame(TextWriter sw, FileAnalysisSettings settings)
     {
-        static IEnumerable<FlatBufferNodeField> FieldSelector(FlatBufferRoot root, FlatBufferFile _) => new[] { root };
         IterateAndDumpSame(sw, settings, FieldSelector);
+        return;
+        static IEnumerable<FlatBufferNodeField> FieldSelector(FlatBufferRoot root, FlatBufferFile _) => [root];
     }
 
     public static void IterateAndDumpSame(TextWriter sw, FileAnalysisSettings settings,

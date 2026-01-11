@@ -56,7 +56,7 @@ public sealed record FieldTypeTracker
     {
         // The potential type flags have not been populated yet.
         // We need to bitwise-or them if the field can be interpreted as any of the types.
-        if (Type.HasFlagFast(FieldType.StructSingle))
+        if (Type.HasFlag(FieldType.StructSingle))
         {
             foreach (var (type, size) in Structs)
             {
@@ -70,19 +70,19 @@ public sealed record FieldTypeTracker
         if (!sizes.IsPlausible(4))
             return;
 
-        if (Type.HasFlagFast(FieldType.StructArray))
+        if (Type.HasFlag(FieldType.StructArray))
         {
             foreach (var (type, _) in Structs)
                 Array |= TryReadTable(entry, index, data, type);
         }
 
-        if (Type.HasFlagFast(FieldType.Object))
+        if (Type.HasFlag(FieldType.Object))
         {
             Single |= TryRead(entry, index, data, TypeCode.Object, 4);
             Single |= TryRead(entry, index, data, TypeCode.String, 4);
         }
 
-        if (Type.HasFlagFast(FieldType.ObjectArray))
+        if (Type.HasFlag(FieldType.ObjectArray))
         {
             Array |= TryReadTable(entry, index, data, TypeCode.Object);
             Array |= TryReadTable(entry, index, data, TypeCode.String);

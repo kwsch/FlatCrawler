@@ -22,16 +22,3 @@ public enum FieldType
 
     All = StructType | ReferenceType,
 }
-
-public static class FieldTypeExtensions
-{
-    public static bool HasFlagFast(this FieldType value, FieldType flag)
-    {
-        return (value & flag) != 0;
-    }
-
-    public static bool HasSingleFlag(this FieldType value)
-    {
-        return value != 0 && (value & (value - 1)) == 0;
-    }
-}

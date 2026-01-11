@@ -57,21 +57,24 @@ public static class TypeCodeUtil
         _ => Unrecognized,
     };
 
-    /// <summary>
-    /// Checks if the type code is a recognized node type.
-    /// </summary>
-    public static bool IsValidNodeType(this TypeCode type) => type is not (<= Unrecognized or TypeCode.Decimal or TypeCode.DateTime or TypeCode.Char or > TypeCode.String);
-
-    public static string ToTypeString(this TypeCode type) => type switch
+    extension(TypeCode type)
     {
-        TypeCode.Int16 => "short",
-        TypeCode.Int32 => "int",
-        TypeCode.Int64 => "long",
-        TypeCode.UInt16 => "ushort",
-        TypeCode.UInt32 => "uint",
-        TypeCode.UInt64 => "ulong",
-        TypeCode.Single => "float",
-        TypeCode.Boolean => "bool",
-        _ => type.ToString().ToLowerInvariant(),
-    };
+        /// <summary>
+        /// Checks if the type code is a recognized node type.
+        /// </summary>
+        public bool IsValidNodeType => type is not (<= Unrecognized or TypeCode.Decimal or TypeCode.DateTime or TypeCode.Char or > TypeCode.String);
+
+        public string ToTypeString() => type switch
+        {
+            TypeCode.Int16 => "short",
+            TypeCode.Int32 => "int",
+            TypeCode.Int64 => "long",
+            TypeCode.UInt16 => "ushort",
+            TypeCode.UInt32 => "uint",
+            TypeCode.UInt64 => "ulong",
+            TypeCode.Single => "float",
+            TypeCode.Boolean => "bool",
+            _ => type.ToString().ToLowerInvariant(),
+        };
+    }
 }

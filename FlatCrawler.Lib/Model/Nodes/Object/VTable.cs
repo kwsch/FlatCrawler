@@ -36,7 +36,7 @@ public sealed class VTable
     private const int SizeOfField = sizeof(ushort);
     private const int HeaderSize = SizeOfVTableLength + SizeOfDataTableLength;
 
-    public int RefCount { get; set; } = 0;
+    public int RefCount { get; set; }
 
     public DataRange VTableMemory => new(Location..(Location + VTableLength), DataCategory.VTable, () => "VTable");
 
@@ -46,12 +46,12 @@ public sealed class VTable
         var data = file.Data[offset..]; // adjust view window to be relative to vtable location
         VTableLength = ReadInt16LittleEndian(data);
 
-        // Validate VTable (from https://github.com/dvidelabs/flatcc/blob/master/doc/binary-format.md#verification)
-        // > vtable size is at least the two header fields (2 * sizeof(voffset_t)`).
+        // Validate vTable (from https://github.com/dvidelabs/flatcc/blob/master/doc/binary-format.md#verification)
+        // > vTable size is at least the two header fields (2 * sizeof(vOffset_t)`).
         if (VTableLength < HeaderSize)
             throw new AccessViolationException("Tried to create a VTable from invalid data.");
 
-        // > vtable size is aligned and does not end outside buffer.
+        // > vTable size is aligned and does not end outside buffer.
         if (VTableLength > data.Length)
             throw new AccessViolationException("VTable is beyond the file data length.");
 
@@ -133,10 +133,12 @@ public sealed class VTable
         return string.Join(" ", GetFieldPrint(tuples, bias));
     }
 
-    public override string ToString() => $@"VTable @ 0x{Location:X}
-VTable Size: {VTableLength}
-DataTable Size: {DataTableLength}
-Fields: {FieldInfo.Length}: {string.Join(" ", GetFieldPrint(FieldInfo))}";
+    public override string ToString() => $"""
+                                          VTable @ 0x{Location:X}
+                                          VTable Size: {VTableLength}
+                                          DataTable Size: {DataTableLength}
+                                          Fields: {FieldInfo.Length}: {string.Join(" ", GetFieldPrint(FieldInfo))}
+                                          """;
 
     private const int fieldsPerLine = 8;
 

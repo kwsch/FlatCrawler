@@ -32,7 +32,7 @@ public sealed record FlatBufferFieldValue<T> : FlatBufferNode, IStructNode where
         TypeCode.Byte   or TypeCode.SByte  => $"{type.ToTypeString()} {f:X2} ({f})",
         TypeCode.UInt16 or TypeCode.Int16  => $"{type.ToTypeString()} {f:X4} ({f})",
         TypeCode.UInt32 or TypeCode.Int32  => $"{type.ToTypeString()} {f:X8} ({f})",
-        TypeCode.UInt64 or TypeCode.UInt64 => $"{type.ToTypeString()} {f:X16} ({f})",
+        TypeCode.UInt64 or TypeCode.Int64  => $"{type.ToTypeString()} {f:X16} ({f})",
         _ => $"{type.ToTypeString()} {f:X} ({f})",
     };
 
